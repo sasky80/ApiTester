@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ApiTester.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+        x:Class="ApiTester.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="ApiTester">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainWindowViewModel/>
+    </Design.DataContext>
+
+    <TabControl>
+        <TabItem Header="HTTP">
+        <DockPanel>
+            <StackPanel DockPanel.Dock="Top">
+                <Grid ColumnDefinitions="100,4*" RowDefinitions="Auto"  Margin="4">
+                    <ComboBox ItemsSource="{Binding HttpMethods}" SelectedItem="{Binding HttpMethod}" Grid.Column="0"/>
+                    <TextBox Text="{Binding Url}" Watermark="Enter URL" Grid.Column="1" />
+                </Grid>
+                <Grid ColumnDefinitions="Auto,Auto,200,*" RowDefinitions="Auto"  Margin="4">
+                    <RadioButton GroupName="ContentType" Content="application/json" Grid.Column="0"  Grid.Row="0" IsChecked="{Binding AppJsonEnabled }" Margin="4"/>
+                    <RadioButton GroupName="ContentType" Content="application/xml" Grid.Column="1" Grid.Row="0" IsChecked="{Binding AppXmlEnabled }" Margin="4"/>
+                    <RadioButton GroupName="ContentType" Content="text/plain" Grid.Column="2" Grid.Row="0" IsChecked="{Binding TextPlainEnabled }" Margin="4"/>
+                </Grid>
+                <Grid ColumnDefinitions="*,150,Auto,Auto,Auto" RowDefinitions="Auto"  Margin="4">
+                    <NumericUpDown Value="{Binding MessageCount}" Minimum="1" Grid.Column="1" Grid.Row="1" Margin="4"/>
+                    <CheckBox Content="Send in parallel" IsChecked="{Binding SendInParallel}" Grid.Column="2" Grid.Row="1" Margin="4"/>
+                    <Button Content="Format" Command="{Binding FormatCommand}" Grid.Column="3" Grid.Row="1" Width="100" Margin="4"/>
+                    <Button Content="Send" Command="{Binding SendCommand}" Grid.Column="4" Grid.Row="1" Width="100" Margin="4"/>
+
+                </Grid>
+                
+             <TextBlock  Text="{Binding ValidationStatus}" TextWrapping="Wrap"/>   
+            </StackPanel>
+            <TextBox Text="{Binding RequestBody}" AcceptsReturn="True" Watermark="Enter request body" TextWrapping="Wrap" DockPanel.Dock="Bottom"/>
+            </DockPanel>
+            
+        </TabItem>
+        <TabItem Header="gRPC">
+            <!-- Zawartość zakładki gRPC -->
+        </TabItem>
+    </TabControl>
+</Window>
