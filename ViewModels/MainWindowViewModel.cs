@@ -2,11 +2,14 @@
 
 using System;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Net.Http;
-using System.Net.Http.Headers;
 using System.Reactive;
-using System.Windows.Input;
+using System.Reactive.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using ApiTester.Builders;
+using ApiTester.Models;
 using Newtonsoft.Json;
 using ReactiveUI;
 
@@ -54,7 +57,7 @@ public partial class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _url, value);
     }
 
-    private string _requestBody;
+    private string _requestBody = string.Empty;
     public string RequestBody
     {
         get => _requestBody;
@@ -69,18 +72,25 @@ public partial class MainWindowViewModel : ViewModelBase
         set => this.RaiseAndSetIfChanged(ref _validationStatus, value);
     }
 
-    private int _messageCount;
+    private int _messageCount = 1;
     public int MessageCount
     {
         get => _messageCount;
         set => this.RaiseAndSetIfChanged(ref _messageCount, value);
     }
 
-    private bool _sendInParallel;
+    private bool _sendInParallel = false;
     public bool SendInParallel
     {
         get => _sendInParallel;
         set => this.RaiseAndSetIfChanged(ref _sendInParallel, value);
+    }
+    private int _numberOfThreads = 1;
+
+    public int NumberOfThreads
+    {
+        get => _numberOfThreads;
+        set => this.RaiseAndSetIfChanged(ref _numberOfThreads, value);
     }
 
     public ReactiveCommand<Unit, Unit> SendCommand { get; }
@@ -88,34 +98,74 @@ public partial class MainWindowViewModel : ViewModelBase
 
     public MainWindowViewModel()
     {
-        SendCommand = ReactiveCommand.Create(Send);
+        SendCommand = ReactiveCommand.CreateFromTask(SendRequestsInParallel);
         FormatCommand = ReactiveCommand.Create(Format);
+        HttpRequestResults = new ObservableCollection<HttpRequestResult>();
     }
 
-    private async void Send()
+    public ObservableCollection<HttpRequestResult> HttpRequestResults { get; }
+
+
+    //sends request in parallel, number o threads is defined by NumberOfThreads, total number of requests is defined by MessageCount
+    //each request is sent to the same URL with the same body and headers
+    //each request is sent with a unique request number
+    //response is stored in HttpRequestResults.
+    // request message is built using MessageBuilder.BuildRequest method
+
+    public async Task SendRequestsInParallel()
     {
         Format();
-        using (var client = new HttpClient())
+
+        var semaphore = new SemaphoreSlim(NumberOfThreads);
+        var tasks = Enumerable.Range(0, MessageCount).Select(async i =>
         {
+            await semaphore.WaitAsync();
             try
             {
-                var requests = MessageBuilder.BuildRequest(Url, HttpMethod, ContentType, RequestBody);
-
-                var request = new HttpRequestMessage(new HttpMethod(HttpMethod), Url)
+                using (var client = new HttpClient())
                 {
-                    Content = new StringContent(RequestBody)
-                };
+                    var request = MessageBuilder.BuildRequest(Url, HttpMethod, ContentType, RequestBody);
+                    var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+                    var response = await client.SendAsync(request);
+                    stopwatch.Stop();
 
-                var response = await client.SendAsync(request);
-                response.EnsureSuccessStatusCode();
-                ValidationStatus = "Request sent successfully.";
+                    var result = new HttpRequestResult
+                    {
+                        RequestNumber = i + 1,
+                        ResponseCode = (int)response.StatusCode,
+                        ResponseContent = (await response.Content.ReadAsStringAsync())?.Substring(0, 100) ?? string.Empty,
+                        RequestDuration = stopwatch.Elapsed
+                    };
+
+                    lock (HttpRequestResults)
+                    {
+                        HttpRequestResults.Add(result);
+                    }
+                }
             }
             catch (Exception ex)
             {
-                ValidationStatus = $"Error: {ex.Message}";
+                var errResult = new HttpRequestResult
+                {
+                    RequestNumber = i + 1,
+                    ResponseCode = 0,
+                    ResponseContent = ex.Message,
+                    RequestDuration = TimeSpan.Zero
+                };
+                lock (HttpRequestResults)
+                {
+                    HttpRequestResults.Add(errResult);
+                }
             }
-        }
+            finally
+            {
+                semaphore.Release();
+            }
+        });
+
+        await Task.WhenAll(tasks);
     }
+
     private void Format()
     {
         ValidationStatus = string.Empty;
@@ -131,6 +181,10 @@ public partial class MainWindowViewModel : ViewModelBase
 
     private static string FormatJson(string json)
     {
+        if (string.IsNullOrWhiteSpace(json))
+        {
+            return string.Empty;
+        }
         object? parsedJson = JsonConvert.DeserializeObject(json);
 
         return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
