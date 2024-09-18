@@ -1,0 +1,11 @@
+{
+  "HttpMethod": "GET",
+  "Url": "http:\\\\google.com",
+  "AppJsonEnabled": false,
+  "AppXmlEnabled": true,
+  "TextPlainEnabled": false,
+  "MessageCount": 5,
+  "SendInParallel": true,
+  "NumberOfThreads": 2,
+  "RequestBody": ""
+}

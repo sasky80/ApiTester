@@ -14,9 +14,7 @@
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
     </Window.Resources>
     <Design.DataContext>
-        <!-- This only sets the DataContext for the previewer in an IDE,
-             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
-        <vm:MainWindowViewModel/>
+
     </Design.DataContext>
 <Grid ColumnDefinitions="*,*" RowDefinitions="*">
     <TabControl Grid.Column="0">
@@ -32,14 +30,16 @@
                     <RadioButton GroupName="ContentType" Content="application/xml" Grid.Column="1" Grid.Row="0" IsChecked="{Binding AppXmlEnabled }" Margin="4"/>
                     <RadioButton GroupName="ContentType" Content="text/plain" Grid.Column="2" Grid.Row="0" IsChecked="{Binding TextPlainEnabled }" Margin="4"/>
                 </Grid>
-                <Grid ColumnDefinitions="*,150,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" Margin="4">
-                            <TextBlock Text="Number of requests:" Grid.Column="1" Grid.Row="0" VerticalAlignment="Center" Margin="4"/>
-                            <NumericUpDown Value="{Binding MessageCount}" Minimum="1" Grid.Column="2" Grid.Row="0" Margin="4"/>
-                            <CheckBox Content="Send in parallel" IsChecked="{Binding SendInParallel}" Grid.Column="3" Grid.Row="0" Margin="4"/>
-                            <TextBlock Text="Number of Threads:" Grid.Column="3" Grid.Row="1" VerticalAlignment="Center" Margin="4" IsVisible="{Binding SendInParallel}"/>
-                            <NumericUpDown Value="{Binding NumberOfThreads}" Minimum="1" Grid.Column="4" Grid.Row="1" Margin="4" IsVisible="{Binding SendInParallel, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <Button Content="Format" Command="{Binding FormatCommand}" Grid.Column="4" Grid.Row="0" Width="100" Margin="4"/>
-                            <Button Content="Send" Command="{Binding SendCommand}" Grid.Column="5" Grid.Row="0" Width="100" Margin="4"/>
+                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" Margin="4">
+                            <TextBlock Text="Number of requests:" Grid.Column="2" Grid.Row="0" VerticalAlignment="Center"  HorizontalAlignment="Right" Margin="4"/>
+                            <NumericUpDown Value="{Binding MessageCount}" Minimum="1" Grid.Column="3" Grid.Row="0" Margin="4"/>
+                            <CheckBox Content="Send in parallel" IsChecked="{Binding SendInParallel}" Grid.Column="4" Grid.Row="0" Margin="4"/>
+                            <TextBlock Text="Number of Threads:" Grid.Column="4" Grid.Row="1" VerticalAlignment="Center" Margin="4" IsVisible="{Binding SendInParallel}"/>
+                            <NumericUpDown Value="{Binding NumberOfThreads}" Minimum="1" Grid.Column="5" Grid.Row="1" Margin="4" IsVisible="{Binding SendInParallel, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                            <Button Content="Format" Command="{Binding FormatCommand}" Grid.Column="5" Grid.Row="0" Width="100" Margin="4"/>
+                            <Button Content="Send" Command="{Binding SendCommand}" Grid.Column="6" Grid.Row="0" Width="100" Margin="4"/>
+                            <Button Content="Save" Command="{Binding SaveCommand}" Grid.Column="0" Grid.Row="1" Width="100" Margin="4"/>
+                            <Button Content="Load" Command="{Binding LoadCommand}" Grid.Column="1" Grid.Row="1" Width="100" Margin="4"/>
                   </Grid>
                 
              <TextBlock  Text="{Binding ValidationStatus}" Classes="w1" TextWrapping="Wrap"/>   

@@ -12,6 +12,9 @@
     using ApiTester.Models;
     using Newtonsoft.Json;
     using ReactiveUI;
+    using Avalonia.Controls;
+    using System.Collections.Generic;
+    using System.IO;
 
     public partial class MainWindowViewModel : ViewModelBase
     {
@@ -93,6 +96,9 @@
 
         public ReactiveCommand<Unit, Unit> SendCommand { get; }
         public ReactiveCommand<Unit, Unit> FormatCommand { get; }
+        public ReactiveCommand<Unit, Unit> SaveCommand { get; }
+
+        public ReactiveCommand<Unit, Unit> LoadCommand { get; }
 
         public ObservableCollection<HttpRequestResult> HttpRequestResults { get; }
 
@@ -101,6 +107,8 @@
             SendCommand = ReactiveCommand.CreateFromTask(SendRequestsInParallel);
             FormatCommand = ReactiveCommand.Create(Format);
             HttpRequestResults = new ObservableCollection<HttpRequestResult>();
+            SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
+            LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync);
         }
 
         public async Task SendRequestsInParallel()
@@ -182,6 +190,74 @@
             }
             object? parsedJson = JsonConvert.DeserializeObject(json);
             return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
+        }
+
+        private async Task SaveAsync()
+        {
+            var saveFileDialog = new SaveFileDialog
+            {
+                DefaultExtension = "json",
+                Filters = new List<FileDialogFilter>
+                {
+                    new FileDialogFilter { Name = "JSON Files", Extensions = { "json" } }
+                }
+            };
+
+            string? result = await saveFileDialog.ShowAsync(new Window());
+
+            if (!string.IsNullOrEmpty(result))
+            {
+                var dataToSave = new
+                {
+                    HttpMethod,
+                    Url,
+                    AppJsonEnabled,
+                    AppXmlEnabled,
+                    TextPlainEnabled,
+                    MessageCount,
+                    SendInParallel,
+                    NumberOfThreads,
+                    RequestBody
+                };
+
+                string json = JsonConvert.SerializeObject(dataToSave, Formatting.Indented);
+                await File.WriteAllTextAsync(result, json);
+            }
+        }
+
+        private async Task LoadAsync()
+        {
+            var openFileDialog = new OpenFileDialog
+            {
+                AllowMultiple = false,
+                Filters = new List<FileDialogFilter>
+                {
+                    new FileDialogFilter { Name = "JSON Files", Extensions = { "json" } }
+                }
+            };
+
+            string[]? result = await openFileDialog.ShowAsync(new Window());
+
+            if (result != null && result.Length > 0)
+            {
+                string filePath = result[0];
+                string json = await File.ReadAllTextAsync(filePath);
+
+                var data = JsonConvert.DeserializeObject<ConfigurationData>(json);
+
+                if (data != null)
+                {
+                    HttpMethod = data.HttpMethod;
+                    Url = data.Url;
+                    AppJsonEnabled = data.AppJsonEnabled;
+                    AppXmlEnabled = data.AppXmlEnabled;
+                    TextPlainEnabled = data.TextPlainEnabled;
+                    MessageCount = data.MessageCount;
+                    SendInParallel = data.SendInParallel;
+                    NumberOfThreads = data.NumberOfThreads;
+                    RequestBody = data.RequestBody;
+                }
+            }
         }
     }
 }
