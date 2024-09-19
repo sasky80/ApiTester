@@ -15,6 +15,7 @@
     using Avalonia.Controls;
     using System.Collections.Generic;
     using System.IO;
+    using Avalonia.Platform.Storage;
 
     public partial class MainWindowViewModel : ViewModelBase
     {
@@ -212,18 +213,19 @@
 
         private async Task SaveAsync()
         {
-            var saveFileDialog = new SaveFileDialog
+            var storageProvider = new Window().StorageProvider;
+            var saveFilePickerOptions = new FilePickerSaveOptions
             {
                 DefaultExtension = "json",
-                Filters = new List<FileDialogFilter>
+                FileTypeChoices = new List<FilePickerFileType>
                 {
-                    new FileDialogFilter { Name = "JSON Files", Extensions = { "json" } }
+                    new FilePickerFileType("JSON Files") { Patterns = new[] { "*.json" } }
                 }
             };
 
-            string? result = await saveFileDialog.ShowAsync(new Window());
+            var file = await storageProvider.SaveFilePickerAsync(saveFilePickerOptions);
 
-            if (!string.IsNullOrEmpty(result))
+            if (file is not null)
             {
                 var dataToSave = new
                 {
@@ -239,29 +241,36 @@
                 };
 
                 string json = JsonConvert.SerializeObject(dataToSave, Formatting.Indented);
-                await File.WriteAllTextAsync(result, json);
+
+                await using var stream = await file.OpenWriteAsync();
+                using var streamWriter = new StreamWriter(stream);
+
+                await streamWriter.WriteAsync(json);
             }
         }
 
         private async Task LoadAsync()
         {
-            var openFileDialog = new OpenFileDialog
+            var storageProvider = new Window().StorageProvider;
+            var openFilePickerOptions = new FilePickerOpenOptions
             {
                 AllowMultiple = false,
-                Filters = new List<FileDialogFilter>
+                FileTypeFilter = new List<FilePickerFileType>
                 {
-                    new FileDialogFilter { Name = "JSON Files", Extensions = { "json" } }
+                    new FilePickerFileType("JSON Files") { Patterns = new[] { "*.json" } }
                 }
             };
 
-            string[]? result = await openFileDialog.ShowAsync(new Window());
+            var files = await storageProvider.OpenFilePickerAsync(openFilePickerOptions);
 
-            if (result != null && result.Length > 0)
+            if (files.Count >= 1)
             {
-                string filePath = result[0];
-                string json = await File.ReadAllTextAsync(filePath);
+                await using var stream = await files[0].OpenReadAsync();
+                using var streamReader = new StreamReader(stream);
 
-                var data = JsonConvert.DeserializeObject<ConfigurationData>(json);
+                var fileContent = await streamReader.ReadToEndAsync();
+
+                var data = JsonConvert.DeserializeObject<ConfigurationData>(fileContent);
 
                 if (data != null)
                 {
