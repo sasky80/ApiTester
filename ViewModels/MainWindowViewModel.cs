@@ -37,19 +37,37 @@
         public bool AppJsonEnabled
         {
             get => _selectedContentType == "application/json";
-            set => this.RaiseAndSetIfChanged(ref _selectedContentType, "application/json");
+            set
+            {
+                if (value)
+                {
+                    this.RaiseAndSetIfChanged(ref _selectedContentType, "application/json");
+                }
+            }
         }
 
         public bool AppXmlEnabled
         {
             get => _selectedContentType == "application/xml";
-            set => this.RaiseAndSetIfChanged(ref _selectedContentType, "application/xml");
+            set
+            {
+                if (value)
+                {
+                    this.RaiseAndSetIfChanged(ref _selectedContentType, "application/xml");
+                }
+            }
         }
 
         public bool TextPlainEnabled
         {
             get => _selectedContentType == "text/plain";
-            set => this.RaiseAndSetIfChanged(ref _selectedContentType, "text/plain");
+            set
+            {
+                if (value)
+                {
+                    this.RaiseAndSetIfChanged(ref _selectedContentType, "text/plain");
+                }
+            }
         }
 
         private string _url;

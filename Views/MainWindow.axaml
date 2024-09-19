@@ -1,69 +1,99 @@
 <Window xmlns="https://github.com/avaloniaui"
-        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:vm="using:ApiTester.ViewModels"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:converters="clr-namespace:ApiTester.Converters"
-        mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-        x:Class="ApiTester.Views.MainWindow"
-        x:DataType="vm:MainWindowViewModel"
-        Icon="/Assets/avalonia-logo.ico"
-        Title="ApiTester">
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:vm="using:ApiTester.ViewModels"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:converters="clr-namespace:ApiTester.Converters"
+    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+    x:Class="ApiTester.Views.MainWindow"
+    x:DataType="vm:MainWindowViewModel"
+    Icon="/Assets/avalonia-logo.ico"
+    Title="ApiTester">
     <Window.Resources>
-        <converters:TruncateTextConverter x:Key="TruncateTextConverter"/>
-        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
+        <converters:TruncateTextConverter x:Key="TruncateTextConverter" />
+        <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
     </Window.Resources>
     <Design.DataContext>
 
     </Design.DataContext>
-<Grid ColumnDefinitions="*,*" RowDefinitions="*">
-    <TabControl Grid.Column="0">
-        <TabItem Header="HTTP">
-        <DockPanel>
-            <StackPanel DockPanel.Dock="Top">
-                <Grid ColumnDefinitions="100,4*" RowDefinitions="Auto"  Margin="4">
-                    <ComboBox ItemsSource="{Binding HttpMethods}" SelectedItem="{Binding HttpMethod}" Grid.Column="0"/>
-                    <TextBox Text="{Binding Url}" Watermark="Enter URL" Grid.Column="1" />
-                </Grid>
-                <Grid ColumnDefinitions="Auto,Auto,200,*" RowDefinitions="Auto"  Margin="4">
-                    <RadioButton GroupName="ContentType" Content="application/json" Grid.Column="0"  Grid.Row="0" IsChecked="{Binding AppJsonEnabled }" Margin="4"/>
-                    <RadioButton GroupName="ContentType" Content="application/xml" Grid.Column="1" Grid.Row="0" IsChecked="{Binding AppXmlEnabled }" Margin="4"/>
-                    <RadioButton GroupName="ContentType" Content="text/plain" Grid.Column="2" Grid.Row="0" IsChecked="{Binding TextPlainEnabled }" Margin="4"/>
-                </Grid>
-                <Grid ColumnDefinitions="Auto,Auto,*,Auto,Auto,Auto,Auto" RowDefinitions="Auto,Auto,Auto" Margin="4">
-                            <TextBlock Text="Number of requests:" Grid.Column="2" Grid.Row="0" VerticalAlignment="Center"  HorizontalAlignment="Right" Margin="4"/>
-                            <NumericUpDown Value="{Binding MessageCount}" Minimum="1" Grid.Column="3" Grid.Row="0" Margin="4"/>
-                            <CheckBox Content="Send in parallel" IsChecked="{Binding SendInParallel}" Grid.Column="4" Grid.Row="0" Margin="4"/>
-                            <TextBlock Text="Number of Threads:" Grid.Column="4" Grid.Row="1" VerticalAlignment="Center" Margin="4" IsVisible="{Binding SendInParallel}"/>
-                            <NumericUpDown Value="{Binding NumberOfThreads}" Minimum="1" Grid.Column="5" Grid.Row="1" Margin="4" IsVisible="{Binding SendInParallel, Converter={StaticResource BooleanToVisibilityConverter}}"/>
-                            <Button Content="Format" Command="{Binding FormatCommand}" Grid.Column="5" Grid.Row="0" Width="100" Margin="4"/>
-                            <Button Content="Send" Command="{Binding SendCommand}" Grid.Column="6" Grid.Row="0" Width="100" Margin="4"/>
-                            <Button Content="Save" Command="{Binding SaveCommand}" Grid.Column="0" Grid.Row="1" Width="100" Margin="4"/>
-                            <Button Content="Load" Command="{Binding LoadCommand}" Grid.Column="1" Grid.Row="1" Width="100" Margin="4"/>
-                  </Grid>
-                
-             <TextBlock  Text="{Binding ValidationStatus}" Classes="w1" TextWrapping="Wrap"/>   
-            </StackPanel>
-            <TextBox Text="{Binding RequestBody}" AcceptsReturn="True" Watermark="Enter request body" TextWrapping="Wrap" DockPanel.Dock="Bottom" />
-            </DockPanel>
-            
-        </TabItem>
-        <TabItem Header="gRPC">
-            <!-- Zawartość zakładki gRPC -->
-        </TabItem>
-    </TabControl>
-    <DataGrid Grid.Column="1" ItemsSource="{Binding HttpRequestResults}" IsReadOnly="True" CanUserResizeColumns="True" >
+    <Grid ColumnDefinitions="*,*" RowDefinitions="*">
+        <TabControl Grid.Column="0">
+            <TabItem Header="HTTP">
+                <DockPanel>
+                    <StackPanel DockPanel.Dock="Top">
+                        <Grid ColumnDefinitions="100,4*" RowDefinitions="Auto" Margin="4">
+                            <ComboBox ItemsSource="{Binding HttpMethods}"
+                                SelectedItem="{Binding HttpMethod}" Grid.Column="0" />
+                            <TextBox Text="{Binding Url}" Watermark="Enter URL" Grid.Column="1" />
+                        </Grid>
+                        <WrapPanel Margin="4">
+                            <RadioButton GroupName="ContentType" Content="application/json"
+                                Grid.Column="0" Grid.Row="0" IsChecked="{Binding AppJsonEnabled }"
+                                Margin="4" />
+                            <RadioButton GroupName="ContentType" Content="application/xml"
+                                Grid.Column="1" Grid.Row="0" IsChecked="{Binding AppXmlEnabled }"
+                                Margin="4" />
+                            <RadioButton GroupName="ContentType" Content="text/plain"
+                                Grid.Column="2" Grid.Row="0" IsChecked="{Binding TextPlainEnabled }"
+                                Margin="4" />
+                        </WrapPanel>
+                        <WrapPanel>
+                            <NumericUpDown Value="{Binding MessageCount}" Minimum="1" Margin="4"
+                                Width="120" />
+                            <TextBlock Text="Number of requests" VerticalAlignment="Center"
+                                HorizontalAlignment="Right" Margin="4" />
+                            <CheckBox Content="Send in parallel"
+                                IsChecked="{Binding SendInParallel}" Margin="4" />
+                            <NumericUpDown Value="{Binding NumberOfThreads}" Minimum="1" Width="120"
+                                Margin="4"
+                                IsVisible="{Binding SendInParallel, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <TextBlock Text="Number of Threads" VerticalAlignment="Center"
+                                Margin="4" IsVisible="{Binding SendInParallel}" />
+                        </WrapPanel>
+                        <StackPanel>
+                            <WrapPanel>
+                                <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto"
+                                    HorizontalAlignment="Left">
+                                    <Button Content="Save" Command="{Binding SaveCommand}"
+                                        Grid.Column="0" Grid.Row="0" Width="100" Margin="4" />
+                                    <Button Content="Load" Command="{Binding LoadCommand}"
+                                        Grid.Column="1" Grid.Row="0" Width="100" Margin="4" />
+                                </Grid>
+                                <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto"
+                                    HorizontalAlignment="Right">
+                                    <Button Content="Format" Command="{Binding FormatCommand}"
+                                        Grid.Column="0" Grid.Row="0" Width="100" Margin="4" />
+                                    <Button Content="Send" Command="{Binding SendCommand}"
+                                        Grid.Column="1" Grid.Row="0" Width="100" Margin="4" />
+                                </Grid>
+                            </WrapPanel>
+                        </StackPanel>
+                        <TextBlock Text="{Binding ValidationStatus}" Classes="w1"
+                            TextWrapping="Wrap" />
+                    </StackPanel>
+                    <TextBox Text="{Binding RequestBody}" AcceptsReturn="True"
+                        Watermark="Enter request body" TextWrapping="Wrap" DockPanel.Dock="Bottom" />
+                </DockPanel>
+
+            </TabItem>
+            <TabItem Header="gRPC">
+                <!-- Zawartość zakładki gRPC -->
+            </TabItem>
+        </TabControl>
+        <DataGrid Grid.Column="1" ItemsSource="{Binding HttpRequestResults}" IsReadOnly="True"
+            CanUserResizeColumns="True">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="Request Number" Binding="{Binding RequestNumber}"/>
-                <DataGridTextColumn Header="Response Code" Binding="{Binding ResponseCode}"/>
+                <DataGridTextColumn Header="Request Number" Binding="{Binding RequestNumber}" />
+                <DataGridTextColumn Header="Response Code" Binding="{Binding ResponseCode}" />
                 <DataGridTemplateColumn Header="Response Content">
-            <DataGridTemplateColumn.CellTemplate>
-                <DataTemplate>
-                    <TextBlock Text="{Binding ResponseContent, Converter={StaticResource TruncateTextConverter}, ConverterParameter=30}"/>
-                </DataTemplate>
-            </DataGridTemplateColumn.CellTemplate>
-        </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Request Duration" Binding="{Binding RequestDuration}"/>
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock
+                                Text="{Binding ResponseContent, Converter={StaticResource TruncateTextConverter}, ConverterParameter=30}" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Request Duration" Binding="{Binding RequestDuration}" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>
