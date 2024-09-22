@@ -12,10 +12,6 @@
     using ApiTester.Models;
     using Newtonsoft.Json;
     using ReactiveUI;
-    using Avalonia.Controls;
-    using System.Collections.Generic;
-    using System.IO;
-    using Avalonia.Platform.Storage;
     using ApiTester.Services;
 
     public partial class MainWindowViewModel : ViewModelBase
