@@ -16,6 +16,7 @@
     using System.Collections.Generic;
     using System.IO;
     using Avalonia.Platform.Storage;
+    using ApiTester.Services;
 
     public partial class MainWindowViewModel : ViewModelBase
     {
@@ -107,6 +108,8 @@
         }
 
         private int _numberOfThreads = 1;
+        private readonly IConfigurationService _configurationService;
+
         public int NumberOfThreads
         {
             get => _numberOfThreads;
@@ -121,13 +124,14 @@
 
         public ObservableCollection<HttpRequestResult> HttpRequestResults { get; }
 
-        public MainWindowViewModel()
+        public MainWindowViewModel(IConfigurationService configurationService)
         {
             SendCommand = ReactiveCommand.CreateFromTask(SendRequestsInParallel);
             FormatCommand = ReactiveCommand.Create(Format);
             HttpRequestResults = new ObservableCollection<HttpRequestResult>();
             SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
             LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync);
+            _configurationService = configurationService;
         }
 
         public async Task SendRequestsInParallel()
@@ -213,77 +217,37 @@
 
         private async Task SaveAsync()
         {
-            var storageProvider = new Window().StorageProvider;
-            var saveFilePickerOptions = new FilePickerSaveOptions
+            var dataToSave = new ConfigurationData
             {
-                DefaultExtension = "json",
-                FileTypeChoices = new List<FilePickerFileType>
-                {
-                    new FilePickerFileType("JSON Files") { Patterns = new[] { "*.json" } }
-                }
+                HttpMethod = HttpMethod,
+                Url = Url,
+                AppJsonEnabled = AppJsonEnabled,
+                AppXmlEnabled = AppXmlEnabled,
+                TextPlainEnabled = TextPlainEnabled,
+                MessageCount = MessageCount,
+                SendInParallel = SendInParallel,
+                NumberOfThreads = NumberOfThreads,
+                RequestBody = RequestBody
             };
 
-            var file = await storageProvider.SaveFilePickerAsync(saveFilePickerOptions);
-
-            if (file is not null)
-            {
-                var dataToSave = new
-                {
-                    HttpMethod,
-                    Url,
-                    AppJsonEnabled,
-                    AppXmlEnabled,
-                    TextPlainEnabled,
-                    MessageCount,
-                    SendInParallel,
-                    NumberOfThreads,
-                    RequestBody
-                };
-
-                string json = JsonConvert.SerializeObject(dataToSave, Formatting.Indented);
-
-                await using var stream = await file.OpenWriteAsync();
-                using var streamWriter = new StreamWriter(stream);
-
-                await streamWriter.WriteAsync(json);
-            }
+            await _configurationService.SaveAsync(dataToSave);
         }
 
         private async Task LoadAsync()
         {
-            var storageProvider = new Window().StorageProvider;
-            var openFilePickerOptions = new FilePickerOpenOptions
+            var data = await _configurationService.LoadAsync();
+
+            if (data != null)
             {
-                AllowMultiple = false,
-                FileTypeFilter = new List<FilePickerFileType>
-                {
-                    new FilePickerFileType("JSON Files") { Patterns = new[] { "*.json" } }
-                }
-            };
-
-            var files = await storageProvider.OpenFilePickerAsync(openFilePickerOptions);
-
-            if (files.Count >= 1)
-            {
-                await using var stream = await files[0].OpenReadAsync();
-                using var streamReader = new StreamReader(stream);
-
-                var fileContent = await streamReader.ReadToEndAsync();
-
-                var data = JsonConvert.DeserializeObject<ConfigurationData>(fileContent);
-
-                if (data != null)
-                {
-                    HttpMethod = data.HttpMethod;
-                    Url = data.Url;
-                    AppJsonEnabled = data.AppJsonEnabled;
-                    AppXmlEnabled = data.AppXmlEnabled;
-                    TextPlainEnabled = data.TextPlainEnabled;
-                    MessageCount = data.MessageCount;
-                    SendInParallel = data.SendInParallel;
-                    NumberOfThreads = data.NumberOfThreads;
-                    RequestBody = data.RequestBody;
-                }
+                HttpMethod = data.HttpMethod;
+                Url = data.Url;
+                AppJsonEnabled = data.AppJsonEnabled;
+                AppXmlEnabled = data.AppXmlEnabled;
+                TextPlainEnabled = data.TextPlainEnabled;
+                MessageCount = data.MessageCount;
+                SendInParallel = data.SendInParallel;
+                NumberOfThreads = data.NumberOfThreads;
+                RequestBody = data.RequestBody;
             }
         }
     }
