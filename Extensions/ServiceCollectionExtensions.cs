@@ -8,7 +8,7 @@ namespace ApiTester.Extensions
     {
         public static void AddCommonServices(this IServiceCollection collection)
         {
-            collection.AddSingleton<IConfigurationService, ConfigurationService>();
+            collection.AddSingleton<IPersistenceService, PersistenceService>();
             collection.AddTransient<MainWindowViewModel>();
         }
     }

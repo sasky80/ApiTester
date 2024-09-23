@@ -8,9 +8,9 @@ using System.Threading.Tasks;
 
 namespace ApiTester.Services
 {
-    public class ConfigurationService : IConfigurationService
+    public class PersistenceService : IPersistenceService
     {
-        public async Task SaveAsync(ConfigurationData dataToSave)
+        public async Task SaveAsync(HttpRequestPersistentDataModel dataToSave)
         {
             var storageProvider = new Window().StorageProvider;
             var saveFilePickerOptions = new FilePickerSaveOptions
@@ -35,7 +35,7 @@ namespace ApiTester.Services
             }
         }
 
-        public async Task<ConfigurationData?> LoadAsync()
+        public async Task<HttpRequestPersistentDataModel?> LoadAsync()
         {
             var storageProvider = new Window().StorageProvider;
             var openFilePickerOptions = new FilePickerOpenOptions
@@ -56,7 +56,7 @@ namespace ApiTester.Services
                 using var streamReader = new StreamReader(stream);
                 string json = await streamReader.ReadToEndAsync();
 
-                return JsonConvert.DeserializeObject<ConfigurationData>(json);
+                return JsonConvert.DeserializeObject<HttpRequestPersistentDataModel>(json);
             }
 
             return null;

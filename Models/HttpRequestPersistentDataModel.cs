@@ -1,6 +1,6 @@
 namespace ApiTester.Models
 {
-    public class ConfigurationData
+    public class HttpRequestPersistentDataModel
     {
         public string HttpMethod { get; set; }
         public string Url { get; set; }

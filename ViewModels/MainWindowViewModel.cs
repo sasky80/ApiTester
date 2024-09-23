@@ -104,7 +104,7 @@
         }
 
         private int _numberOfThreads = 1;
-        private readonly IConfigurationService _configurationService;
+        private readonly IPersistenceService _persistenceService;
 
         public int NumberOfThreads
         {
@@ -120,14 +120,14 @@
 
         public ObservableCollection<HttpRequestResult> HttpRequestResults { get; }
 
-        public MainWindowViewModel(IConfigurationService configurationService)
+        public MainWindowViewModel(IPersistenceService persistenceService)
         {
             SendCommand = ReactiveCommand.CreateFromTask(SendRequestsInParallel);
             FormatCommand = ReactiveCommand.Create(Format);
             HttpRequestResults = new ObservableCollection<HttpRequestResult>();
             SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
             LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync);
-            _configurationService = configurationService;
+            _persistenceService = persistenceService;
         }
 
         public async Task SendRequestsInParallel()
@@ -211,9 +211,9 @@
             return JsonConvert.SerializeObject(parsedJson, Formatting.Indented);
         }
 
-        private async Task SaveAsync()
+        private HttpRequestPersistentDataModel ToPersistentDataModel()
         {
-            var dataToSave = new ConfigurationData
+            return new HttpRequestPersistentDataModel
             {
                 HttpMethod = HttpMethod,
                 Url = Url,
@@ -225,25 +225,33 @@
                 NumberOfThreads = NumberOfThreads,
                 RequestBody = RequestBody
             };
+        }
 
-            await _configurationService.SaveAsync(dataToSave);
+        private void FromPersistentDataModel(HttpRequestPersistentDataModel data)
+        {
+            HttpMethod = data.HttpMethod;
+            Url = data.Url;
+            AppJsonEnabled = data.AppJsonEnabled;
+            AppXmlEnabled = data.AppXmlEnabled;
+            TextPlainEnabled = data.TextPlainEnabled;
+            MessageCount = data.MessageCount;
+            SendInParallel = data.SendInParallel;
+            NumberOfThreads = data.NumberOfThreads;
+            RequestBody = data.RequestBody;
+        }
+
+        private async Task SaveAsync()
+        {
+            await _persistenceService.SaveAsync(ToPersistentDataModel());
         }
 
         private async Task LoadAsync()
         {
-            var data = await _configurationService.LoadAsync();
+            var data = await _persistenceService.LoadAsync();
 
             if (data != null)
             {
-                HttpMethod = data.HttpMethod;
-                Url = data.Url;
-                AppJsonEnabled = data.AppJsonEnabled;
-                AppXmlEnabled = data.AppXmlEnabled;
-                TextPlainEnabled = data.TextPlainEnabled;
-                MessageCount = data.MessageCount;
-                SendInParallel = data.SendInParallel;
-                NumberOfThreads = data.NumberOfThreads;
-                RequestBody = data.RequestBody;
+                FromPersistentDataModel(data);
             }
         }
     }
