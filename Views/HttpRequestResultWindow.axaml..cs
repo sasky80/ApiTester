@@ -2,9 +2,9 @@ using Avalonia.Controls;
 
 namespace ApiTester.Views
 {
-    public partial class MainWindow : Window
+    public partial class HttpRequestResultWindow : Window
     {
-        public MainWindow()
+        public HttpRequestResultWindow()
         {
             InitializeComponent();
         }

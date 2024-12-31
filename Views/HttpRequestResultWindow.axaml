@@ -1,0 +1,62 @@
+<Window xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    x:Class="ApiTester.Views.HttpRequestResultWindow"
+    xmlns:vm="using:ApiTester.ViewModels"
+    x:DataType="vm:HttpRequestResultViewModel"
+    Title="HTTP Request Result"
+    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+    WindowStartupLocation="CenterOwner"
+    Icon="/Assets/avalonia-logo.ico"
+>
+    <TabControl Grid.Column="0">
+        <TabItem Header="Body">
+            <ScrollViewer>
+                <DockPanel>
+                    <StackPanel Margin="10" DockPanel.Dock="Top">
+                        <TextBlock Text="Status Code:" FontWeight="Bold" />
+                        <TextBlock Text="{Binding StatusCode}" Margin="0,0,0,10" />
+
+                        <TextBlock Text="Response Body:" FontWeight="Bold" />
+                    </StackPanel>
+                    <TextBox Text="{Binding ResponseBody}" AcceptsReturn="True" TextWrapping="Wrap"
+                        Margin="0,0,0,10" IsReadOnly="True" DockPanel.Dock="Bottom" />
+                </DockPanel>
+            </ScrollViewer>
+        </TabItem>
+        <TabItem Header="Headers">
+            <ScrollViewer>
+                <StackPanel Margin="10">
+
+                    <DataGrid ItemsSource="{Binding Headers}">
+                        <DataGrid.Columns>
+                            <DataGridTemplateColumn Width="25*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <Border Background="Gainsboro"
+                                            BorderBrush="Black"
+                                            BorderThickness="2"
+                                            CornerRadius="3"
+                                            Padding="1" Margin="1">
+                                            <TextBox Text="{Binding Key}" TextWrapping="Wrap"
+                                                IsReadOnly="True" />
+                                        </Border>
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                            <DataGridTemplateColumn Width="75*">
+                                <DataGridTemplateColumn.CellTemplate>
+                                    <DataTemplate>
+                                        <TextBox Text="{Binding Value}" TextWrapping="Wrap"
+                                            IsReadOnly="True" />
+                                    </DataTemplate>
+                                </DataGridTemplateColumn.CellTemplate>
+                            </DataGridTemplateColumn>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </ScrollViewer>
+        </TabItem>
+    </TabControl>
+</Window>

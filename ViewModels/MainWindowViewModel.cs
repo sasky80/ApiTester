@@ -13,9 +13,15 @@
     using Newtonsoft.Json;
     using ReactiveUI;
     using ApiTester.Services;
+    using ApiTester.Views;
+    using Microsoft.Extensions.DependencyInjection;
 
     public partial class MainWindowViewModel : ViewModelBase
     {
+        private readonly IPersistenceService _persistenceService;
+        private readonly IFormatterService _formatterService;
+        private readonly IServiceProvider _serviceProvider;
+
         public ObservableCollection<string> HttpMethods { get; } = new ObservableCollection<string> { "GET", "POST", "PUT", "DELETE" };
 
         private string _selectedHttpMethod = "GET";
@@ -68,7 +74,7 @@
             }
         }
 
-        private string _url;
+        private string _url = "https://cat-fact.herokuapp.com/facts";
         public string Url
         {
             get => _url;
@@ -104,8 +110,6 @@
         }
 
         private int _numberOfThreads = 1;
-        private readonly IPersistenceService _persistenceService;
-
         public int NumberOfThreads
         {
             get => _numberOfThreads;
@@ -116,18 +120,25 @@
         public ReactiveCommand<Unit, Unit> FormatCommand { get; }
         public ReactiveCommand<Unit, Unit> SaveCommand { get; }
 
+        public ReactiveCommand<HttpRequestResult, Unit> ShowDetailsCommand { get; }
+
+
         public ReactiveCommand<Unit, Unit> LoadCommand { get; }
 
         public ObservableCollection<HttpRequestResult> HttpRequestResults { get; }
 
-        public MainWindowViewModel(IPersistenceService persistenceService)
+        public MainWindowViewModel(IPersistenceService persistenceService, IFormatterService formatterService, IServiceProvider serviceProvider)
         {
             SendCommand = ReactiveCommand.CreateFromTask(SendRequestsInParallel);
             FormatCommand = ReactiveCommand.Create(Format);
             HttpRequestResults = new ObservableCollection<HttpRequestResult>();
             SaveCommand = ReactiveCommand.CreateFromTask(SaveAsync);
             LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync);
+
+            ShowDetailsCommand = ReactiveCommand.CreateFromTask<HttpRequestResult>(ShowDetailsAsync);
             _persistenceService = persistenceService;
+            _formatterService = formatterService;
+            _serviceProvider = serviceProvider;
         }
 
         public async Task SendRequestsInParallel()
@@ -183,7 +194,8 @@
                     RequestNumber = requestNumber,
                     ResponseCode = (int)response.StatusCode,
                     ResponseContent = (await response.Content.ReadAsStringAsync())?.Substring(0, 100) ?? string.Empty,
-                    RequestDuration = stopwatch.Elapsed
+                    RequestDuration = stopwatch.Elapsed,
+                    HttpResponseMessage = response
                 };
             }
         }
@@ -193,7 +205,7 @@
             ValidationStatus = string.Empty;
             try
             {
-                RequestBody = FormatJson(RequestBody);
+                RequestBody = _formatterService.FormatJson(RequestBody);
             }
             catch (Exception ex)
             {
@@ -253,6 +265,20 @@
             {
                 FromPersistentDataModel(data);
             }
+        }
+
+        private async Task ShowDetailsAsync(HttpRequestResult httpRequestResults)
+        {
+
+            var details = new HttpRequestResultWindow();
+
+            var viewModel = _serviceProvider.GetRequiredService<HttpRequestResultViewModel>();
+
+            await viewModel.SetDetails(httpRequestResults);
+
+            details.DataContext = viewModel;
+
+            details.Show();
         }
     }
 }

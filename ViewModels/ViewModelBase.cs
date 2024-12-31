@@ -1,8 +1,8 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
-using ReactiveUI;
+﻿using ReactiveUI;
 
-namespace ApiTester.ViewModels;
-
-public class ViewModelBase : ReactiveObject
+namespace ApiTester.ViewModels
 {
+    public class ViewModelBase : ReactiveObject
+    {
+    }
 }

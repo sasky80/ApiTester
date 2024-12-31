@@ -9,7 +9,9 @@ namespace ApiTester.Extensions
         public static void AddCommonServices(this IServiceCollection collection)
         {
             collection.AddSingleton<IPersistenceService, PersistenceService>();
+            collection.AddSingleton<IFormatterService, FormatterService>();
             collection.AddTransient<MainWindowViewModel>();
+            collection.AddTransient<HttpRequestResultViewModel>();
         }
     }
 }
