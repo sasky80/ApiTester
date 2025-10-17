@@ -71,16 +71,38 @@
                                 </Grid>
                             </WrapPanel>
                         </StackPanel>
-                        <TextBlock Text="{Binding ValidationStatus}" Classes="w1"
-                            TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ValidationStatus}" Classes="w1" TextWrapping="Wrap" />
                     </StackPanel>
-                    <TextBox Text="{Binding RequestBody}" AcceptsReturn="True"
-                        Watermark="Enter request body" TextWrapping="Wrap" DockPanel.Dock="Bottom" />
+                    <TabControl DockPanel.Dock="Bottom">
+                        <TabItem Header="Body">
+                            <TextBox Text="{Binding RequestBody}" AcceptsReturn="True"
+                                Watermark="Enter request body" TextWrapping="Wrap" />
+                        </TabItem>
+                        <TabItem Header="Headers">
+                            <DockPanel>
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="4">
+                                    <Button Content="Add Row" Command="{Binding AddHeaderRowCommand}" Width="100" Margin="0,0,8,0" />
+                                    <Button Content="Remove" Command="{Binding RemoveHeaderRowCommand}" Width="100" Margin="0,0,8,0" />
+                                    <Button Content="Clear" Command="{Binding ClearHeadersCommand}" Width="100" />
+                                </StackPanel>
+                                <DockPanel DockPanel.Dock="Top" Margin="4">
+                                    <TextBlock Text="{Binding HeadersValidationMessage}" Foreground="Red" Margin="0,0,0,4" DockPanel.Dock="Top" />
+                                </DockPanel>
+                                <DataGrid ItemsSource="{Binding Headers}" SelectedItem="{Binding SelectedHeader}" AutoGenerateColumns="False" Margin="4" GridLinesVisibility="All"
+          BorderThickness="1" BorderBrush="Gray">
+                                    <DataGrid.Columns>
+                                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*" />
+                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="3*" />
+                                    </DataGrid.Columns>
+                                </DataGrid>
+                            </DockPanel>
+                        </TabItem>
+                    </TabControl>
                 </DockPanel>
 
             </TabItem>
             <TabItem Header="gRPC">
-                <!-- Zawartość zakładki gRPC -->
+                <!-- gRPC tab content -->
             </TabItem>
         </TabControl>
         <DataGrid Grid.Column="1" ItemsSource="{Binding HttpRequestResults}" IsReadOnly="True"
@@ -92,7 +114,6 @@
                             Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).ShowDetailsCommand}"
                             CommandParameter="{Binding .}" Background="Transparent">
                             <PathIcon Height="16" Width="16" Data="{StaticResource lookup}"></PathIcon>
-
                         </Button>
                     </DataTemplate>
                 </DataGridTemplateColumn>

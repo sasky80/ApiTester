@@ -5,28 +5,14 @@ using ApiTester.Models;
 
 namespace ApiTester.ViewModels
 {
-    public class HttpRequestResultViewModel : ViewModelBase
+    public class HttpRequestResultViewModel(IFormatterService formatterService) : ViewModelBase
     {
 
-        private readonly IFormatterService _formatterService;
+        private readonly IFormatterService _formatterService = formatterService;
 
         private string _responseBody = string.Empty;
 
-        public HttpRequestResultViewModel(IFormatterService formatterService)
-        {
-            _formatterService = formatterService;
-        }
-
-        private HttpRequestResult _httpRequestResult;
-        public HttpRequestResult HttpRequestResult
-        {
-            get => _httpRequestResult;
-            set
-            {
-                _httpRequestResult = value;
-
-            }
-        }
+        public required HttpRequestResult HttpRequestResult { get; set; }
 
         public async Task SetDetails(HttpRequestResult httpRequestResult)
         {

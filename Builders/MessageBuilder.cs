@@ -1,8 +1,10 @@
 namespace ApiTester.Builders
 {
     using System;
+    using System.Collections.Generic;
     using System.Net.Http;
     using System.Net.Http.Headers;
+    using ApiTester.Models;
 
     public static class MessageBuilder
     {
@@ -17,7 +19,7 @@ namespace ApiTester.Builders
         // and sets the content type header of the HttpRequestMessage object to the provided content type.
         // The method returns the created HttpRequestMessage object.
 
-        public static HttpRequestMessage BuildRequest(string url, string method, string contentType, string body)
+        public static HttpRequestMessage BuildRequest(string url, string method, string contentType, string body, IEnumerable<HeaderEntry>? headers = null)
         {
             var request = new HttpRequestMessage(new HttpMethod(method), url);
 
@@ -27,6 +29,18 @@ namespace ApiTester.Builders
                 {
                     request.Content = new StringContent(body);
                     request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                }
+            }
+
+            if (headers != null)
+            {
+                foreach (var h in headers)
+                {
+                    if (!string.IsNullOrWhiteSpace(h?.Name))
+                    {
+                        // Use TryAddWithoutValidation to allow any header names/values
+                        request.Headers.TryAddWithoutValidation(h.Name, h?.Value ?? string.Empty);
+                    }
                 }
             }
 

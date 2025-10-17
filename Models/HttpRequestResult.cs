@@ -7,8 +7,8 @@ namespace ApiTester.Models
     {
         public int RequestNumber { get; set; }
         public int ResponseCode { get; set; }
-        public string ResponseContent { get; set; }
+        public string? ResponseContent { get; set; }
         public TimeSpan RequestDuration { get; set; }
-        public HttpResponseMessage HttpResponseMessage { get; set; }
+        public HttpResponseMessage? HttpResponseMessage { get; set; }
     }
 }

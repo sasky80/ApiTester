@@ -15,6 +15,9 @@
     using ApiTester.Services;
     using ApiTester.Views;
     using Microsoft.Extensions.DependencyInjection;
+    using System.Collections.Generic;
+    using System.ComponentModel;
+    using System.Collections.Specialized;
 
     public partial class MainWindowViewModel : ViewModelBase
     {
@@ -88,7 +91,7 @@
             set => this.RaiseAndSetIfChanged(ref _requestBody, value);
         }
 
-        private string _validationStatus;
+        private string _validationStatus = string.Empty;
         public string ValidationStatus
         {
             get => _validationStatus;
@@ -127,6 +130,25 @@
 
         public ObservableCollection<HttpRequestResult> HttpRequestResults { get; }
 
+        public ObservableCollection<HeaderEntry> Headers { get; } = new();
+        private HeaderEntry? _selectedHeader;
+        public HeaderEntry? SelectedHeader
+        {
+            get => _selectedHeader;
+            set => this.RaiseAndSetIfChanged(ref _selectedHeader, value);
+        }
+
+        public ReactiveCommand<Unit, Unit> AddHeaderRowCommand { get; }
+        public ReactiveCommand<Unit, Unit> RemoveHeaderRowCommand { get; }
+        public ReactiveCommand<Unit, Unit> ClearHeadersCommand { get; }
+
+        private string _headersValidationMessage = string.Empty;
+        public string HeadersValidationMessage
+        {
+            get => _headersValidationMessage;
+            set => this.RaiseAndSetIfChanged(ref _headersValidationMessage, value);
+        }
+
         public MainWindowViewModel(IPersistenceService persistenceService, IFormatterService formatterService, IServiceProvider serviceProvider)
         {
             SendCommand = ReactiveCommand.CreateFromTask(SendRequestsInParallel);
@@ -139,6 +161,58 @@
             _persistenceService = persistenceService;
             _formatterService = formatterService;
             _serviceProvider = serviceProvider;
+
+            // Initialize headers with one empty row
+            if (Headers.Count == 0)
+            {
+                Headers.Add(new HeaderEntry());
+            }
+
+            AddHeaderRowCommand = ReactiveCommand.Create(() => Headers.Add(new HeaderEntry()));
+            RemoveHeaderRowCommand = ReactiveCommand.Create(RemoveSelectedHeader);
+            ClearHeadersCommand = ReactiveCommand.Create(ClearHeaders);
+
+            Headers.CollectionChanged += Headers_CollectionChanged;
+        }
+
+        private void Headers_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
+        {
+            ValidateHeaders();
+        }
+
+        private void RemoveSelectedHeader()
+        {
+            if (SelectedHeader != null)
+            {
+                Headers.Remove(SelectedHeader);
+            }
+            if (Headers.Count == 0)
+            {
+                Headers.Add(new HeaderEntry());
+            }
+            ValidateHeaders();
+        }
+
+        private void ClearHeaders()
+        {
+            Headers.Clear();
+            Headers.Add(new HeaderEntry());
+            ValidateHeaders();
+        }
+
+        private void ValidateHeaders()
+        {
+            // Duplicate name check (case-insensitive), ignoring empty names
+            var duplicates = Headers
+                .Where(h => !string.IsNullOrWhiteSpace(h.Name))
+                .GroupBy(h => h.Name.Trim(), StringComparer.OrdinalIgnoreCase)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+
+            HeadersValidationMessage = duplicates.Count > 0
+                ? $"Duplicate header name(s): {string.Join(", ", duplicates)}"
+                : string.Empty;
         }
 
         public async Task SendRequestsInParallel()
@@ -184,7 +258,7 @@
         {
             using (var client = new HttpClient())
             {
-                var request = MessageBuilder.BuildRequest(Url, HttpMethod, ContentType, RequestBody);
+                var request = MessageBuilder.BuildRequest(Url, HttpMethod, ContentType, RequestBody, Headers);
                 var stopwatch = System.Diagnostics.Stopwatch.StartNew();
                 var response = await client.SendAsync(request);
                 stopwatch.Stop();
@@ -235,7 +309,8 @@
                 MessageCount = MessageCount,
                 SendInParallel = SendInParallel,
                 NumberOfThreads = NumberOfThreads,
-                RequestBody = RequestBody
+                RequestBody = RequestBody,
+                Headers = Headers.Select(h => new HeaderEntry { Name = h.Name, Value = h.Value }).ToList()
             };
         }
 
@@ -250,6 +325,19 @@
             SendInParallel = data.SendInParallel;
             NumberOfThreads = data.NumberOfThreads;
             RequestBody = data.RequestBody;
+            Headers.Clear();
+            if (data.Headers != null && data.Headers.Count > 0)
+            {
+                foreach (var h in data.Headers)
+                {
+                    Headers.Add(new HeaderEntry { Name = h.Name, Value = h.Value });
+                }
+            }
+            else
+            {
+                Headers.Add(new HeaderEntry());
+            }
+            ValidateHeaders();
         }
 
         private async Task SaveAsync()

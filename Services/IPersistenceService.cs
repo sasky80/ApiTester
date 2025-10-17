@@ -8,6 +8,6 @@ namespace ApiTester.Services
     public interface IPersistenceService
     {
         Task SaveAsync(HttpRequestPersistentDataModel dataToSave);
-        Task<HttpRequestPersistentDataModel> LoadAsync();
+        Task<HttpRequestPersistentDataModel?> LoadAsync();
     }
 }
