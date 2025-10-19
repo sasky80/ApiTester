@@ -19,7 +19,7 @@ namespace ApiTester.Builders
         // and sets the content type header of the HttpRequestMessage object to the provided content type.
         // The method returns the created HttpRequestMessage object.
 
-        public static HttpRequestMessage BuildRequest(string url, string method, string contentType, string body, IEnumerable<HeaderEntry>? headers = null)
+        public static HttpRequestMessage BuildRequest(string url, string method, string contentType, string body, IEnumerable<HeaderEntry>? headers = null, string? authScheme = null, string? basicUser = null, string? basicPass = null, string? bearerToken = null, string? apiKey = null, string? apiKeyLocation = null, string? apiKeyName = null)
         {
             var request = new HttpRequestMessage(new HttpMethod(method), url);
 
@@ -40,6 +40,43 @@ namespace ApiTester.Builders
                     {
                         // Use TryAddWithoutValidation to allow any header names/values
                         request.Headers.TryAddWithoutValidation(h.Name, h?.Value ?? string.Empty);
+                    }
+                }
+            }
+
+            // Apply authentication (if not already present in headers)
+            if (!string.IsNullOrWhiteSpace(authScheme))
+            {
+                var scheme = authScheme?.Trim();
+                if (string.Equals(scheme, "Basic", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(basicUser))
+                {
+                    var creds = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{basicUser}:{basicPass}"));
+                    if (!request.Headers.Contains("Authorization"))
+                    {
+                        request.Headers.TryAddWithoutValidation("Authorization", $"Basic {creds}");
+                    }
+                }
+                else if (string.Equals(scheme, "Bearer", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(bearerToken))
+                {
+                    if (!request.Headers.Contains("Authorization"))
+                    {
+                        request.Headers.TryAddWithoutValidation("Authorization", $"Bearer {bearerToken}");
+                    }
+                }
+                else if (string.Equals(scheme, "ApiKey", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(apiKey))
+                {
+                    if (string.Equals(apiKeyLocation, "Header", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var headerName = string.IsNullOrWhiteSpace(apiKeyName) ? "X-API-KEY" : apiKeyName;
+                        request.Headers.TryAddWithoutValidation(headerName, apiKey);
+                    }
+                    else // Query
+                    {
+                        var uriBuilder = new UriBuilder(request.RequestUri!);
+                        var q = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
+                        q["api_key"] = apiKey;
+                        uriBuilder.Query = q.ToString();
+                        request.RequestUri = uriBuilder.Uri;
                     }
                 }
             }

@@ -11,6 +11,6 @@ namespace ApiTester.Models
         public bool SendInParallel { get; set; }
         public int NumberOfThreads { get; set; }
         public string RequestBody { get; set; } = string.Empty;
-        public System.Collections.Generic.List<HeaderEntry> Headers { get; set; } = new();
+        public System.Collections.Generic.List<SerializableHeader> Headers { get; set; } = new();
     }
 }

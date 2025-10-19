@@ -17,5 +17,12 @@ namespace ApiTester.Models
             get => _value;
             set => this.RaiseAndSetIfChanged(ref _value, value);
         }
+
+        private bool _isFixed = false;
+        public bool IsFixed
+        {
+            get => _isFixed;
+            set => this.RaiseAndSetIfChanged(ref _isFixed, value);
+        }
     }
 }

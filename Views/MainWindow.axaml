@@ -12,6 +12,7 @@
     <Window.Resources>
         <converters:TruncateTextConverter x:Key="TruncateTextConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
+        <converters:EqualityToBooleanConverter x:Key="EqualityToBooleanConverter" />
         <StreamGeometry x:Key="lookup">M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5
             32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0
             208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z</StreamGeometry>
@@ -39,6 +40,10 @@
                             <RadioButton GroupName="ContentType" Content="text/plain"
                                 Grid.Column="2" Grid.Row="0" IsChecked="{Binding TextPlainEnabled }"
                                 Margin="4" />
+                            <RadioButton GroupName="ContentType" Content="Other"
+                                Grid.Column="3" Grid.Row="0" IsChecked="{Binding OtherEnabled }"
+                                Margin="4" />
+                            <TextBox Text="{Binding CustomContentType}" Width="200" Margin="4" IsEnabled="{Binding OtherEnabled}" Watermark="Enter custom content-type" />
                         </WrapPanel>
                         <WrapPanel>
                             <NumericUpDown Value="{Binding MessageCount}" Minimum="1" Margin="4"
@@ -82,20 +87,68 @@
                             <DockPanel>
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="4">
                                     <Button Content="Add Row" Command="{Binding AddHeaderRowCommand}" Width="100" Margin="0,0,8,0" />
-                                    <Button Content="Remove" Command="{Binding RemoveHeaderRowCommand}" Width="100" Margin="0,0,8,0" />
-                                    <Button Content="Clear" Command="{Binding ClearHeadersCommand}" Width="100" />
+                                    <Button Content="Remove" Command="{Binding RemoveHeaderRowCommand}" Width="100" Margin="0,0,8,0" IsEnabled="{Binding CanRemoveHeader}" />
+                                    <Button Content="Clear" Command="{Binding ClearHeadersCommand}" Width="100" IsEnabled="{Binding CanClearHeaders}" />
                                 </StackPanel>
                                 <DockPanel DockPanel.Dock="Top" Margin="4">
                                     <TextBlock Text="{Binding HeadersValidationMessage}" Foreground="Red" Margin="0,0,0,4" DockPanel.Dock="Top" />
                                 </DockPanel>
                                 <DataGrid ItemsSource="{Binding Headers}" SelectedItem="{Binding SelectedHeader}" AutoGenerateColumns="False" Margin="4" GridLinesVisibility="All"
-          BorderThickness="1" BorderBrush="Gray">
+          BorderThickness="1" BorderBrush="Gray" CanUserSortColumns="False">
                                     <DataGrid.Columns>
-                                        <DataGridTextColumn Header="Name" Binding="{Binding Name}" Width="2*" />
-                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="3*" />
+                                        <DataGridTemplateColumn Header="Name" Width="2*" CanUserSort="False">
+                                            <DataGridTemplateColumn.CellTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding Name}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellTemplate>
+                                            <DataGridTemplateColumn.CellEditingTemplate>
+                                                <DataTemplate>
+                                                    <TextBox Text="{Binding Name, Mode=TwoWay}" IsReadOnly="{Binding IsFixed}" />
+                                                </DataTemplate>
+                                            </DataGridTemplateColumn.CellEditingTemplate>
+                                        </DataGridTemplateColumn>
+                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="3*" CanUserSort="False" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
+                        </TabItem>
+                        <TabItem Header="Authentication">
+                            <StackPanel Margin="8">
+                                <TextBlock Text="Authentication" FontWeight="Bold" Margin="0,0,0,8" />
+                                <TextBlock Text="Select scheme:" />
+                                <WrapPanel Margin="4">
+                                    <RadioButton Content="None" GroupName="AuthScheme" Margin="4"
+                                                 IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=None}" />
+                                    <RadioButton Content="Basic" GroupName="AuthScheme" Margin="4"
+                                                 IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Basic}" />
+                                    <RadioButton Content="Bearer" GroupName="AuthScheme" Margin="4"
+                                                 IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Bearer}" />
+                                    <RadioButton Content="ApiKey" GroupName="AuthScheme" Margin="4"
+                                                 IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=ApiKey}" />
+                                </WrapPanel>
+
+                                <StackPanel Margin="0,8,0,0">
+                                    <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Basic}">
+                                        <TextBlock Text="Basic Authentication" FontWeight="Bold" />
+                                        <TextBox Text="{Binding BasicUsername}" Watermark="Username" Margin="0,4" />
+                                        <TextBox Text="{Binding BasicPassword, Mode=TwoWay}" PasswordChar="*" Margin="0,4"  Watermark="Password"/>
+                                    </StackPanel>
+                                    <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Bearer}">
+                                        <TextBlock Text="Bearer Token" FontWeight="Bold" />
+                                        <TextBox Text="{Binding BearerToken}" Watermark="Token" Margin="0,4" />
+                                    </StackPanel>
+                                    <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=ApiKey}">
+                                        <TextBlock Text="API Key" FontWeight="Bold" />
+                                        <TextBox Text="{Binding ApiKey}" Watermark="Key" Margin="0,4" />
+                                        <TextBox Text="{Binding ApiKeyName}" Watermark="Header/Param name (e.g. X-API-KEY or api_key)" Margin="0,4" />
+                                        <ComboBox SelectedItem="{Binding ApiKeyLocation}" Margin="0,4">
+                                            <ComboBoxItem Content="Header" />
+                                            <ComboBoxItem Content="Query" />
+                                        </ComboBox>
+                                    </StackPanel>
+                                </StackPanel>
+                            </StackPanel>
                         </TabItem>
                     </TabControl>
                 </DockPanel>

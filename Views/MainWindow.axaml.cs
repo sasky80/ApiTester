@@ -1,4 +1,5 @@
 using Avalonia.Controls;
+using Avalonia.Interactivity;
 
 namespace ApiTester.Views
 {
@@ -8,5 +9,7 @@ namespace ApiTester.Views
         {
             InitializeComponent();
         }
+
+        // Password binding is handled directly via TextBox with PasswordChar in XAML
     }
 }
