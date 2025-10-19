@@ -2,6 +2,7 @@
 {
     using System;
     using System.Collections.ObjectModel;
+    using System.Collections.Generic;
     using System.Linq;
     using System.Net.Http;
     using System.Reactive;
@@ -15,9 +16,9 @@
     using ApiTester.Services;
     using ApiTester.Views;
     using Microsoft.Extensions.DependencyInjection;
-    using System.Collections.Generic;
     using System.ComponentModel;
     using System.Collections.Specialized;
+    using Avalonia.Controls.ApplicationLifetimes;
 
     public partial class MainWindowViewModel : ViewModelBase
     {
@@ -60,6 +61,20 @@
             }
         }
 
+        public bool NoneEnabled
+        {
+            get => string.Equals(_selectedContentType, "None", StringComparison.OrdinalIgnoreCase);
+            set
+            {
+                if (value)
+                {
+                    this.RaiseAndSetIfChanged(ref _selectedContentType, "None");
+                    UpdateContentTypeHeader();
+                    NotifyContentTypeChanged();
+                }
+            }
+        }
+
         public bool AppXmlEnabled
         {
             get => _selectedContentType == "application/xml";
@@ -94,11 +109,13 @@
             this.RaisePropertyChanged(nameof(AppJsonEnabled));
             this.RaisePropertyChanged(nameof(AppXmlEnabled));
             this.RaisePropertyChanged(nameof(TextPlainEnabled));
+            this.RaisePropertyChanged(nameof(NoneEnabled));
             // Other is true when ContentType is not one of the knowns
             var isOther = !(
                 string.Equals(ContentType, "application/json", StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(ContentType, "application/xml", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(ContentType, "text/plain", StringComparison.OrdinalIgnoreCase)
+                string.Equals(ContentType, "text/plain", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(ContentType, "None", StringComparison.OrdinalIgnoreCase)
             );
 
             // Update backing field without invoking the setter to avoid recursion
@@ -126,6 +143,13 @@
             set => this.RaiseAndSetIfChanged(ref _validationStatus, value);
         }
 
+        private string _copyStatusMessage = string.Empty;
+        public string CopyStatusMessage
+        {
+            get => _copyStatusMessage;
+            set => this.RaiseAndSetIfChanged(ref _copyStatusMessage, value);
+        }
+
         private int _messageCount = 1;
         public int MessageCount
         {
@@ -149,6 +173,8 @@
 
         public ReactiveCommand<Unit, Unit> SendCommand { get; }
         public ReactiveCommand<Unit, Unit> FormatCommand { get; }
+        public ReactiveCommand<Unit, Unit> CopyAsCurlCommand { get; }
+        public ReactiveCommand<Unit, Unit> CopyAsPowerShellCommand { get; }
         public ReactiveCommand<Unit, Unit> SaveCommand { get; }
 
         public ReactiveCommand<HttpRequestResult, Unit> ShowDetailsCommand { get; }
@@ -158,6 +184,8 @@
 
         public ObservableCollection<HttpRequestResult> HttpRequestResults { get; }
 
+        public ObservableCollection<string> ApiKeyLocations { get; } = new ObservableCollection<string> { "Header", "Query" };
+
         public ObservableCollection<HeaderEntry> Headers { get; } = new();
         private HeaderEntry? _selectedHeader;
         public HeaderEntry? SelectedHeader
@@ -166,9 +194,9 @@
             set
             {
                 this.RaiseAndSetIfChanged(ref _selectedHeader, value);
-                // cannot remove the first (content-type) row
-                CanRemoveHeader = _selectedHeader != null && _selectedHeader != Headers.FirstOrDefault();
-                CanClearHeaders = Headers.Count > 1;
+                // cannot remove a fixed header (Content-Type when present)
+                CanRemoveHeader = _selectedHeader != null && !_selectedHeader.IsFixed;
+                CanClearHeaders = Headers.Count > 0 && Headers.Any(h => !h.IsFixed);
             }
         }
 
@@ -236,12 +264,14 @@
             LoadCommand = ReactiveCommand.CreateFromTask(LoadAsync);
 
             ShowDetailsCommand = ReactiveCommand.CreateFromTask<HttpRequestResult>(ShowDetailsAsync);
+            CopyAsCurlCommand = ReactiveCommand.CreateFromTask(CopyAsCurlAsync);
+            CopyAsPowerShellCommand = ReactiveCommand.CreateFromTask(CopyAsPowerShellAsync);
             _persistenceService = persistenceService;
             _formatterService = formatterService;
             _serviceProvider = serviceProvider;
 
-            // Initialize headers with Content-Type as the first non-removable row
-            if (Headers.Count == 0)
+            // Initialize headers: add Content-Type only when a content type is selected
+            if (Headers.Count == 0 && !string.Equals(ContentType, "None", StringComparison.OrdinalIgnoreCase))
             {
                 Headers.Add(new HeaderEntry { Name = "Content-Type", Value = ContentType, IsFixed = true });
             }
@@ -254,6 +284,208 @@
             ClearHeadersCommand = ReactiveCommand.Create(ClearHeaders);
 
             Headers.CollectionChanged += Headers_CollectionChanged;
+        }
+
+        private async Task CopyAsCurlAsync()
+        {
+            try
+            {
+                // Build curl
+                var sb = new System.Text.StringBuilder();
+                sb.Append("curl");
+                sb.Append(" -X ").Append(HttpMethod);
+
+                // Prepare headers list (avoid modifying original collection)
+                var headerPairs = Headers
+                    .Where(h => !string.IsNullOrWhiteSpace(h?.Name))
+                    .Select(h => new KeyValuePair<string, string>(h.Name!, h.Value ?? string.Empty))
+                    .ToList();
+
+                // Add authentication to headers or url as appropriate, unless already present
+                var hasAuthorizationHeader = headerPairs.Any(h => string.Equals(h.Key, "Authorization", StringComparison.OrdinalIgnoreCase));
+                var hasApiKeyHeader = headerPairs.Any(h => string.Equals(h.Key, ApiKeyName ?? string.Empty, StringComparison.OrdinalIgnoreCase));
+
+                // Basic auth -> Authorization: Basic base64(user:pass)
+                if (string.Equals(AuthScheme, "Basic", StringComparison.OrdinalIgnoreCase) && !hasAuthorizationHeader)
+                {
+                    try
+                    {
+                        var credBytes = System.Text.Encoding.UTF8.GetBytes($"{BasicUsername}:{BasicPassword}");
+                        var b64 = Convert.ToBase64String(credBytes);
+                        headerPairs.Add(new KeyValuePair<string, string>("Authorization", $"Basic {b64}"));
+                    }
+                    catch
+                    {
+                        // ignore encoding issues
+                    }
+                }
+
+                // Bearer token
+                if (string.Equals(AuthScheme, "Bearer", StringComparison.OrdinalIgnoreCase) && !hasAuthorizationHeader && !string.IsNullOrEmpty(BearerToken))
+                {
+                    headerPairs.Add(new KeyValuePair<string, string>("Authorization", $"Bearer {BearerToken}"));
+                }
+
+                // ApiKey
+                var url = Url ?? string.Empty;
+                // Treat empty ApiKeyLocation as Header by default
+                var apiKeyLocation = string.IsNullOrWhiteSpace(ApiKeyLocation) ? "Header" : ApiKeyLocation;
+                if (string.Equals(AuthScheme, "ApiKey", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(ApiKey))
+                {
+                    var name = string.IsNullOrWhiteSpace(ApiKeyName) ? "X-API-KEY" : ApiKeyName;
+                    if (string.Equals(apiKeyLocation, "Header", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Find existing header (case-insensitive). If present, replace its value; otherwise add it.
+                        var idx = headerPairs.FindIndex(h => string.Equals(h.Key, name, StringComparison.OrdinalIgnoreCase));
+                        if (idx >= 0)
+                        {
+                            headerPairs[idx] = new KeyValuePair<string, string>(name, ApiKey);
+                        }
+                        else
+                        {
+                            headerPairs.Add(new KeyValuePair<string, string>(name, ApiKey));
+                        }
+                    }
+                    else if (string.Equals(apiKeyLocation, "Query", StringComparison.OrdinalIgnoreCase))
+                    {
+                        try
+                        {
+                            var sep = url.Contains("?") ? "&" : "?";
+                            url = url + sep + Uri.EscapeDataString(name ?? "api_key") + "=" + Uri.EscapeDataString(ApiKey);
+                        }
+                        catch
+                        {
+                            // ignore URL encoding issues
+                        }
+                    }
+                }
+
+                // Headers
+                foreach (var h in headerPairs)
+                {
+                    sb.Append(" -H ")
+                      .Append('"')
+                      .Append(h.Key)
+                      .Append(": ")
+                      .Append(h.Value?.Replace("\"", "\\\"") ?? string.Empty)
+                      .Append('"');
+                }
+
+                // Body
+                if (!string.IsNullOrEmpty(RequestBody))
+                {
+                    sb.Append(" -d ")
+                      .Append('"')
+                      .Append(RequestBody.Replace("\"", "\\\""))
+                      .Append('"');
+                }
+
+                sb.Append(' ').Append(url);
+
+                var curl = sb.ToString();
+
+                // Copy to clipboard via Avalonia (preferred cross-platform API)
+                try
+                {
+                    var lifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                    var mainWindow = lifetime?.MainWindow;
+                    var clipboard = mainWindow?.Clipboard;
+                    if (clipboard != null)
+                    {
+                        await clipboard.SetTextAsync(curl);
+                        CopyStatusMessage = "Copied curl to clipboard";
+                        // Clear message after a short delay
+                        _ = Task.Run(async () =>
+                        {
+                            await Task.Delay(3000);
+                            CopyStatusMessage = string.Empty;
+                        });
+                    }
+                }
+                catch
+                {
+                    // ignore any clipboard errors
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+
+        private async Task CopyAsPowerShellAsync()
+        {
+            try
+            {
+                // Build a PowerShell Invoke-RestMethod snippet
+                var headersPairs = Headers.Where(h => !string.IsNullOrWhiteSpace(h?.Name)).ToDictionary(h => h.Name!, h => h.Value ?? string.Empty, StringComparer.OrdinalIgnoreCase);
+
+                // Apply authentication
+                if (string.Equals(AuthScheme, "Basic", StringComparison.OrdinalIgnoreCase) && !headersPairs.ContainsKey("Authorization") && !string.IsNullOrEmpty(BasicUsername))
+                {
+                    var b64 = Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes($"{BasicUsername}:{BasicPassword}"));
+                    headersPairs["Authorization"] = $"Basic {b64}";
+                }
+                else if (string.Equals(AuthScheme, "Bearer", StringComparison.OrdinalIgnoreCase) && !headersPairs.ContainsKey("Authorization") && !string.IsNullOrEmpty(BearerToken))
+                {
+                    headersPairs["Authorization"] = $"Bearer {BearerToken}";
+                }
+
+                var uri = Url ?? string.Empty;
+                if (string.Equals(AuthScheme, "ApiKey", StringComparison.OrdinalIgnoreCase) && !string.IsNullOrEmpty(ApiKey))
+                {
+                    var name = string.IsNullOrWhiteSpace(ApiKeyName) ? "api_key" : ApiKeyName;
+                    if (string.Equals(ApiKeyLocation, "Header", StringComparison.OrdinalIgnoreCase))
+                    {
+                        headersPairs[name] = ApiKey;
+                    }
+                    else
+                    {
+                        var sep = uri.Contains("?") ? "&" : "?";
+                        uri = uri + sep + Uri.EscapeDataString(name) + "=" + Uri.EscapeDataString(ApiKey);
+                    }
+                }
+
+                // Build headers hashtable literal
+                var sb = new System.Text.StringBuilder();
+                sb.AppendLine("$headers = @{");
+                foreach (var kv in headersPairs)
+                {
+                    var val = kv.Value.Replace("`", "``").Replace("\"", "\"\"");
+                    sb.AppendLine($"    '{kv.Key}' = '{val}'");
+                }
+                sb.AppendLine("}");
+                sb.AppendLine($"$body = @'\n{RequestBody}\n'@");
+                sb.AppendLine($"Invoke-RestMethod -Uri '{uri}' -Method {HttpMethod} -Headers $headers -Body $body");
+
+                var psSnippet = sb.ToString();
+
+                // Copy to clipboard
+                try
+                {
+                    var lifetime = Avalonia.Application.Current?.ApplicationLifetime as IClassicDesktopStyleApplicationLifetime;
+                    var mainWindow = lifetime?.MainWindow;
+                    var clipboard = mainWindow?.Clipboard;
+                    if (clipboard != null)
+                    {
+                        await clipboard.SetTextAsync(psSnippet);
+                        CopyStatusMessage = "Copied PowerShell snippet to clipboard";
+                        _ = Task.Run(async () =>
+                        {
+                            await Task.Delay(3000);
+                            CopyStatusMessage = string.Empty;
+                        });
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+            catch
+            {
+                // ignore
+            }
         }
 
         // Authentication
@@ -311,21 +543,46 @@
 
         private void UpdateContentTypeHeader()
         {
-            // Ensure first row exists and represents Content-Type
-            if (Headers.Count == 0)
+            // If 'None' is selected, remove any Content-Type header rows
+            if (string.Equals(ContentType, "None", StringComparison.OrdinalIgnoreCase))
             {
-                Headers.Insert(0, new HeaderEntry { Name = "Content-Type", Value = ContentType });
+                var existing = Headers.FirstOrDefault(h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    Headers.Remove(existing);
+                }
             }
             else
             {
-                var first = Headers[0];
-                first.Name = "Content-Type";
-                first.Value = ContentType;
+                // Ensure first row exists and represents Content-Type
+                var first = Headers.FirstOrDefault();
+                if (first == null || !string.Equals(first.Name, "Content-Type", StringComparison.OrdinalIgnoreCase))
+                {
+                    // If a Content-Type exists elsewhere, move it to the front
+                    var existing = Headers.FirstOrDefault(h => string.Equals(h.Name, "Content-Type", StringComparison.OrdinalIgnoreCase));
+                    if (existing != null)
+                    {
+                        Headers.Remove(existing);
+                        existing.Value = ContentType;
+                        existing.IsFixed = true;
+                        Headers.Insert(0, existing);
+                    }
+                    else
+                    {
+                        Headers.Insert(0, new HeaderEntry { Name = "Content-Type", Value = ContentType, IsFixed = true });
+                    }
+                }
+                else
+                {
+                    first.Name = "Content-Type";
+                    first.Value = ContentType;
+                    first.IsFixed = true;
+                }
             }
 
-            // First row is non-removable
-            CanRemoveHeader = SelectedHeader != null && SelectedHeader != Headers.FirstOrDefault();
-            CanClearHeaders = Headers.Count > 1; // we allow clearing additional rows but keep content-type
+            // Cannot remove fixed headers (the Content-Type when present)
+            CanRemoveHeader = SelectedHeader != null && !_selectedHeader?.IsFixed == true;
+            CanClearHeaders = Headers.Any(h => !h.IsFixed);
 
             // Ensure we are listening to first header changes
             AttachToFirstHeader();
@@ -587,7 +844,8 @@
             var first = Headers.FirstOrDefault();
             if (first != null && string.Equals(first.Name, "Content-Type", StringComparison.OrdinalIgnoreCase))
             {
-                ContentType = first.Value;
+                // If persisted value is empty, interpret as None
+                ContentType = string.IsNullOrWhiteSpace(first.Value) ? "None" : first.Value;
             }
 
             // If the loaded content type is custom (Other), populate the CustomContentType textbox

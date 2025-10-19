@@ -28,7 +28,11 @@ namespace ApiTester.Builders
                 if (!string.IsNullOrEmpty(body))
                 {
                     request.Content = new StringContent(body);
-                    request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                    // Only set Content-Type header if a real content type was selected (not 'None')
+                    if (!string.IsNullOrWhiteSpace(contentType) && !string.Equals(contentType, "None", StringComparison.OrdinalIgnoreCase))
+                    {
+                        request.Content.Headers.ContentType = new MediaTypeHeaderValue(contentType);
+                    }
                 }
             }
 
