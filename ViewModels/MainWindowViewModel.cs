@@ -715,6 +715,8 @@
         {
             Format();
 
+            HttpRequestResults.Clear();
+
             var semaphore = new SemaphoreSlim(NumberOfThreads);
             var tasks = Enumerable.Range(0, MessageCount).Select(async i =>
             {
