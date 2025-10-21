@@ -8,7 +8,10 @@
     x:Class="ApiTester.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
     Icon="/Assets/avalonia-logo.ico"
-    Title="ApiTester">
+    Title="ApiTester"
+    SystemDecorations="None"
+    ExtendClientAreaToDecorationsHint="True"
+    ExtendClientAreaChromeHints="NoChrome">
     <Window.Resources>
         <converters:TruncateTextConverter x:Key="TruncateTextConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
@@ -17,11 +20,69 @@
             32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0
             208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z</StreamGeometry>
     </Window.Resources>
+    <Window.Styles>
+        <Style Selector="Button.titlebar">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="Padding" Value="4" />
+            <Setter Property="Template">
+                <ControlTemplate>
+                    <Border Background="{TemplateBinding Background}" CornerRadius="2">
+                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                </ControlTemplate>
+            </Setter>
+        </Style>
+        <Style Selector="Button.titlebar:pointerover">
+            <Setter Property="Background" Value="#22000000" />
+        </Style>
+        <Style Selector="Button.titlebar:pressed">
+            <Setter Property="Background" Value="#33000000" />
+        </Style>
+    </Window.Styles>
     <Design.DataContext>
 
     </Design.DataContext>
-    <Grid ColumnDefinitions="*,*" RowDefinitions="*" x:Name="Root">
-        <TabControl Grid.Column="0">
+    <Window.KeyBindings>
+        <KeyBinding Gesture="Control+S" Command="{Binding SaveCommand}" />
+        <KeyBinding Gesture="Control+Shift+C" Command="{Binding CopyAsCurlCommand}" />
+        <KeyBinding Gesture="Control+Shift+P" Command="{Binding CopyAsPowerShellCommand}" />
+    </Window.KeyBindings>
+    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,*" x:Name="Root">
+        <!-- Custom title bar: application icon, menu, and window buttons -->
+    <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#FFEEEEEE" Padding="4" PointerPressed="TitleBar_PointerPressed">
+            <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
+                <!-- App icon -->
+                <Image Source="/Assets/avalonia-logo.ico" Width="20" Height="20" Margin="4" />
+
+                <!-- Menu sits between icon and window buttons -->
+                <Menu Grid.Column="1" HorizontalAlignment="Left">
+                    <MenuItem Header="_File">
+                        <MenuItem Header="_Save" Command="{Binding SaveCommand}" />
+                        <MenuItem Header="_Load" Command="{Binding LoadCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="_Tools">
+                        <MenuItem Header="Copy as curl" Command="{Binding CopyAsCurlCommand}" />
+                        <MenuItem Header="Copy as PowerShell" Command="{Binding CopyAsPowerShellCommand}" />
+                    </MenuItem>
+                </Menu>
+
+                <!-- Window buttons (icons) -->
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <Button Name="MinimizeButton" Click="MinimizeButton_Click" Width="36" Margin="2" ToolTip.Tip="Minimize">
+                        <PathIcon Data="M3,9 L13,9 L13,11 L3,11 Z" Width="14" Height="14" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" />
+                    </Button>
+                    <Button Name="MaxRestoreButton" Click="MaxRestoreButton_Click" Width="36" Margin="2">
+                        <Path Data="M3,3 L13,3 L13,13 L3,13 Z" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="2" Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center" HorizontalAlignment="Center" Fill="Transparent" />
+                    </Button>
+                    <Button Name="CloseButton" Click="CloseButton_Click" Width="36" Margin="2">
+                        <Path Data="M3,3 L13,13 M13,3 L3,13" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}" StrokeThickness="2" Stretch="Uniform" Width="14" Height="14" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                    </Button>
+                </StackPanel>
+            </Grid>
+        </Border>
+    <TabControl Grid.Row="2" Grid.Column="0">
             <TabItem Header="HTTP">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top">
@@ -61,28 +122,22 @@
                                 Margin="4" IsVisible="{Binding SendInParallel}" />
                         </WrapPanel>
                             <StackPanel>
-                            <WrapPanel>
-                                <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto"
-                                    HorizontalAlignment="Left">
-                                    <Button Content="Save" Command="{Binding SaveCommand}"
-                                        Grid.Column="0" Grid.Row="0" Width="100" Margin="4" />
-                                    <Button Content="Load" Command="{Binding LoadCommand}"
-                                        Grid.Column="1" Grid.Row="0" Width="100" Margin="4" />
+                                <WrapPanel>
+                                    <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto"
+                                        HorizontalAlignment="Left">
+                                        <!-- Save/Load moved to File menu -->
+                                    </Grid>
+                                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" RowDefinitions="Auto"
+                                        HorizontalAlignment="Right" Margin="0,0,4,0">
+                                        <Button Content="Format" Command="{Binding FormatCommand}"
+                                            Grid.Column="0" Grid.Row="0" Width="100" Margin="4" />
+                                        <Button Content="Send" Command="{Binding SendCommand}"
+                                            Grid.Column="1" Grid.Row="0" Width="100" Margin="4" />
+                                        <!-- Inline copy buttons removed; use menu or shortcuts -->
                                 </Grid>
-                                <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" RowDefinitions="Auto"
-                                    HorizontalAlignment="Right" Margin="0,0,4,0">
-                                    <Button Content="Format" Command="{Binding FormatCommand}"
-                                        Grid.Column="0" Grid.Row="0" Width="100" Margin="4" />
-                                    <Button Content="Send" Command="{Binding SendCommand}"
-                                        Grid.Column="1" Grid.Row="0" Width="100" Margin="4" />
-                                    <Button Content="Copy as curl" Command="{Binding CopyAsCurlCommand}"
-                                        Grid.Column="2" Grid.Row="0" Width="120" Margin="4" />
-                                    <Button Content="Copy as PowerShell" Command="{Binding CopyAsPowerShellCommand}"
-                                        Grid.Column="3" Grid.Row="0" Width="160" Margin="4" />
-                                </Grid>
-                                <TextBlock Text="{Binding CopyStatusMessage}" Foreground="Green" Margin="8,0,0,0" VerticalAlignment="Center" />
-                            </WrapPanel>
-                        </StackPanel>
+                                    <TextBlock Text="{Binding CopyStatusMessage}" Foreground="Green" Margin="8,0,0,0" VerticalAlignment="Center" />
+                                </WrapPanel>
+                            </StackPanel>
                         <TextBlock Text="{Binding ValidationStatus}" Classes="w1" TextWrapping="Wrap" />
                     </StackPanel>
                     <TabControl DockPanel.Dock="Bottom">
@@ -162,7 +217,7 @@
                 <!-- gRPC tab content -->
             </TabItem>
         </TabControl>
-        <DataGrid Grid.Column="1" ItemsSource="{Binding HttpRequestResults}" IsReadOnly="True"
+        <DataGrid Grid.Row="2" Grid.Column="1" ItemsSource="{Binding HttpRequestResults}" IsReadOnly="True"
             CanUserResizeColumns="True">
             <DataGrid.Columns>
                 <DataGridTemplateColumn Width="18">

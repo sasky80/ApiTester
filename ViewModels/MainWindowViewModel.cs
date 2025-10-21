@@ -765,7 +765,7 @@
                 {
                     RequestNumber = requestNumber,
                     ResponseCode = (int)response.StatusCode,
-                    ResponseContent = (await response.Content.ReadAsStringAsync())?.Substring(0, 100) ?? string.Empty,
+                    ResponseContent = (await response.Content.ReadAsStringAsync()),
                     RequestDuration = stopwatch.Elapsed,
                     HttpResponseMessage = response
                 };
