@@ -12,15 +12,8 @@ public class FormatterService : IFormatterService
             return string.Empty;
         }
 
-        try
-        {
-            var json = JToken.Parse(input).ToString(Formatting.Indented);
-            return json;
-        }
-        catch (JsonReaderException)
-        {
-            return input;
-        }
+        var json = JToken.Parse(input).ToString(Formatting.Indented);
+        return json;
     }
 
     /// <inheritdoc />
@@ -34,8 +27,7 @@ public class FormatterService : IFormatterService
 
         try
         {
-            var json = JToken.Parse(input).ToString(Formatting.Indented);
-            output = json;
+            output = FormatJson(input);
             return true;
         }
         catch (JsonReaderException)

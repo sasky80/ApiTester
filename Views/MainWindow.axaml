@@ -16,7 +16,7 @@
         <converters:TruncateTextConverter x:Key="TruncateTextConverter" />
         <converters:BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter" />
         <converters:EqualityToBooleanConverter x:Key="EqualityToBooleanConverter" />
-        <StreamGeometry x:Key="lookup">M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5
+        <StreamGeometry x:Key="Lookup">M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5
             32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0
             208S93.1 0 208 0S416 93.1 416 208zM208 352a144 144 0 1 0 0-288 144 144 0 1 0 0 288z</StreamGeometry>
     </Window.Resources>
@@ -40,15 +40,13 @@
             <Setter Property="Background" Value="#33000000" />
         </Style>
     </Window.Styles>
-    <Design.DataContext>
-
-    </Design.DataContext>
+    
     <Window.KeyBindings>
         <KeyBinding Gesture="Control+S" Command="{Binding SaveCommand}" />
         <KeyBinding Gesture="Control+Shift+C" Command="{Binding CopyAsCurlCommand}" />
         <KeyBinding Gesture="Control+Shift+P" Command="{Binding CopyAsPowerShellCommand}" />
     </Window.KeyBindings>
-    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,*" x:Name="Root">
+    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,*" x:Name="Root">
         <!-- Custom title bar: application icon, menu, and window buttons -->
     <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#FFEEEEEE" Padding="4" PointerPressed="TitleBar_PointerPressed">
             <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
@@ -82,63 +80,92 @@
                 </StackPanel>
             </Grid>
         </Border>
-    <TabControl Grid.Row="2" Grid.Column="0">
+        
+        <!-- Main content area -->
+        <TabControl Grid.Row="1" Grid.Column="0">
             <TabItem Header="HTTP">
                 <DockPanel>
                     <StackPanel DockPanel.Dock="Top">
-                        <Grid ColumnDefinitions="100,4*" RowDefinitions="Auto" Margin="4">
-                            <ComboBox ItemsSource="{Binding HttpMethods}"
-                                SelectedItem="{Binding HttpMethod}" Grid.Column="0" />
-                            <TextBox Text="{Binding Url}" Watermark="Enter URL" Grid.Column="1" />
+                        <!-- URL and HTTP Method -->
+                        <Grid ColumnDefinitions="100,*" Margin="4">
+                            <ComboBox Grid.Column="0"
+                                      ItemsSource="{Binding HttpMethods}"
+                                      SelectedItem="{Binding HttpMethod}" />
+                            <TextBox Grid.Column="1"
+                                     Text="{Binding Url}" 
+                                     Watermark="Enter URL" />
                         </Grid>
+                        
+                        <!-- Content Type Selection -->
                         <WrapPanel Margin="4">
-                            <RadioButton GroupName="ContentType" Content="None"
-                                Grid.Column="0" Grid.Row="0" IsChecked="{Binding NoneEnabled }" Margin="4" />
-                            <RadioButton GroupName="ContentType" Content="application/json"
-                                Grid.Column="0" Grid.Row="0" IsChecked="{Binding AppJsonEnabled }"
-                                Margin="4" />
-                            <RadioButton GroupName="ContentType" Content="application/xml"
-                                Grid.Column="1" Grid.Row="0" IsChecked="{Binding AppXmlEnabled }"
-                                Margin="4" />
-                            <RadioButton GroupName="ContentType" Content="text/plain"
-                                Grid.Column="2" Grid.Row="0" IsChecked="{Binding TextPlainEnabled }"
-                                Margin="4" />
-                            <RadioButton GroupName="ContentType" Content="Other"
-                                Grid.Column="3" Grid.Row="0" IsChecked="{Binding OtherEnabled }"
-                                Margin="4" />
-                            <TextBox Text="{Binding CustomContentType}" Width="200" Margin="4" IsEnabled="{Binding OtherEnabled}" Watermark="Enter custom content-type" />
+                            <RadioButton GroupName="ContentType" 
+                                         Content="None"
+                                         IsChecked="{Binding NoneEnabled}" 
+                                         Margin="4" />
+                            <RadioButton GroupName="ContentType" 
+                                         Content="application/json"
+                                         IsChecked="{Binding AppJsonEnabled}"
+                                         Margin="4" />
+                            <RadioButton GroupName="ContentType" 
+                                         Content="application/xml"
+                                         IsChecked="{Binding AppXmlEnabled}"
+                                         Margin="4" />
+                            <RadioButton GroupName="ContentType" 
+                                         Content="text/plain"
+                                         IsChecked="{Binding TextPlainEnabled}"
+                                         Margin="4" />
+                            <RadioButton GroupName="ContentType" 
+                                         Content="Other"
+                                         IsChecked="{Binding OtherEnabled}"
+                                         Margin="4" />
+                            <TextBox Text="{Binding CustomContentType}" 
+                                     Width="200" 
+                                     Margin="4" 
+                                     IsEnabled="{Binding OtherEnabled}" 
+                                     Watermark="Enter custom content-type" />
                         </WrapPanel>
-                        <WrapPanel>
-                            <NumericUpDown Value="{Binding MessageCount}" Minimum="1" Margin="4"
-                                Width="120" />
-                            <TextBlock Text="Number of requests" VerticalAlignment="Center"
-                                HorizontalAlignment="Right" Margin="4" />
+                        
+                        <!-- Request Options -->
+                        <WrapPanel Margin="4">
+                            <NumericUpDown Value="{Binding MessageCount}" 
+                                           Minimum="1" 
+                                           Width="120"
+                                           Margin="0,0,4,0" />
+                            <TextBlock Text="Number of requests" 
+                                       VerticalAlignment="Center"
+                                       Margin="0,0,16,0" />
                             <CheckBox Content="Send in parallel"
-                                IsChecked="{Binding SendInParallel}" Margin="4" />
-                            <NumericUpDown Value="{Binding NumberOfThreads}" Minimum="1" Width="120"
-                                Margin="4"
-                                IsVisible="{Binding SendInParallel, Converter={StaticResource BooleanToVisibilityConverter}}" />
-                            <TextBlock Text="Number of Threads" VerticalAlignment="Center"
-                                Margin="4" IsVisible="{Binding SendInParallel}" />
+                                      IsChecked="{Binding SendInParallel}" 
+                                      Margin="0,0,8,0" />
+                            <NumericUpDown Value="{Binding NumberOfThreads}" 
+                                           Minimum="1" 
+                                           Width="120"
+                                           Margin="0,0,4,0"
+                                           IsVisible="{Binding SendInParallel, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <TextBlock Text="Number of Threads" 
+                                       VerticalAlignment="Center"
+                                       IsVisible="{Binding SendInParallel}" />
                         </WrapPanel>
-                            <StackPanel>
-                                <WrapPanel>
-                                    <Grid ColumnDefinitions="Auto,Auto" RowDefinitions="Auto"
-                                        HorizontalAlignment="Left">
-                                        <!-- Save/Load moved to File menu -->
-                                    </Grid>
-                                    <Grid ColumnDefinitions="Auto,Auto,Auto,Auto" RowDefinitions="Auto"
-                                        HorizontalAlignment="Right" Margin="0,0,4,0">
-                                        <Button Content="Format" Command="{Binding FormatCommand}"
-                                            Grid.Column="0" Grid.Row="0" Width="100" Margin="4" />
-                                        <Button Content="Send" Command="{Binding SendCommand}"
-                                            Grid.Column="1" Grid.Row="0" Width="100" Margin="4" />
-                                        <!-- Inline copy buttons removed; use menu or shortcuts -->
-                                </Grid>
-                                    <TextBlock Text="{Binding CopyStatusMessage}" Foreground="Green" Margin="8,0,0,0" VerticalAlignment="Center" />
-                                </WrapPanel>
-                            </StackPanel>
-                        <TextBlock Text="{Binding ValidationStatus}" Classes="w1" TextWrapping="Wrap" />
+                        <StackPanel>
+                        <!-- Action Buttons -->
+                        <WrapPanel HorizontalAlignment="Left">
+                            
+                            <Button Content="Format" 
+                                    Command="{Binding FormatCommand}"
+                                    Width="100" 
+                                    Margin="0,0,8,0" />
+                            <Button Content="Send" 
+                                    Command="{Binding SendCommand}"
+                                    Width="100" />
+                        </WrapPanel>
+                    </StackPanel>
+                        <!-- Status Messages -->
+                        <TextBlock Text="{Binding CopyStatusMessage}" 
+                                   Foreground="Green" 
+                                   TextWrapping="Wrap" />
+                        <TextBlock Text="{Binding ValidationStatus}" 
+                                   Foreground="Red"
+                                   TextWrapping="Wrap" />
                     </StackPanel>
                     <TabControl DockPanel.Dock="Bottom">
                         <TabItem Header="Body">
@@ -148,15 +175,34 @@
                         <TabItem Header="Headers">
                             <DockPanel>
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="4">
-                                    <Button Content="Add Row" Command="{Binding AddHeaderRowCommand}" Width="100" Margin="0,0,8,0" />
-                                    <Button Content="Remove" Command="{Binding RemoveHeaderRowCommand}" Width="100" Margin="0,0,8,0" IsEnabled="{Binding CanRemoveHeader}" />
-                                    <Button Content="Clear" Command="{Binding ClearHeadersCommand}" Width="100" IsEnabled="{Binding CanClearHeaders}" />
+                                    <Button Content="Add Row" 
+                                            Command="{Binding AddHeaderRowCommand}" 
+                                            Width="100" 
+                                            Margin="0,0,8,0" />
+                                    <Button Content="Remove" 
+                                            Command="{Binding RemoveHeaderRowCommand}" 
+                                            Width="100" 
+                                            Margin="0,0,8,0" 
+                                            IsEnabled="{Binding CanRemoveHeader}" />
+                                    <Button Content="Clear" 
+                                            Command="{Binding ClearHeadersCommand}" 
+                                            Width="100" 
+                                            IsEnabled="{Binding CanClearHeaders}" />
                                 </StackPanel>
-                                <DockPanel DockPanel.Dock="Top" Margin="4">
-                                    <TextBlock Text="{Binding HeadersValidationMessage}" Foreground="Red" Margin="0,0,0,4" DockPanel.Dock="Top" />
-                                </DockPanel>
-                                <DataGrid ItemsSource="{Binding Headers}" SelectedItem="{Binding SelectedHeader}" AutoGenerateColumns="False" Margin="4" GridLinesVisibility="All"
-          BorderThickness="1" BorderBrush="Gray" CanUserSortColumns="False">
+                                
+                                <TextBlock DockPanel.Dock="Top"
+                                           Text="{Binding HeadersValidationMessage}" 
+                                           Foreground="Red" 
+                                           Margin="4,0,4,4" />
+                                
+                                <DataGrid ItemsSource="{Binding Headers}" 
+                                          SelectedItem="{Binding SelectedHeader}" 
+                                          AutoGenerateColumns="False" 
+                                          Margin="4" 
+                                          GridLinesVisibility="All"
+                                          BorderThickness="1" 
+                                          BorderBrush="Gray" 
+                                          CanUserSortColumns="False">
                                     <DataGrid.Columns>
                                         <DataGridTemplateColumn Header="Name" Width="2*" CanUserSort="False">
                                             <DataGridTemplateColumn.CellTemplate>
@@ -166,46 +212,84 @@
                                             </DataGridTemplateColumn.CellTemplate>
                                             <DataGridTemplateColumn.CellEditingTemplate>
                                                 <DataTemplate>
-                                                    <TextBox Text="{Binding Name, Mode=TwoWay}" IsReadOnly="{Binding IsFixed}" />
+                                                    <TextBox Text="{Binding Name, Mode=TwoWay}" 
+                                                             IsReadOnly="{Binding IsFixed}" />
                                                 </DataTemplate>
                                             </DataGridTemplateColumn.CellEditingTemplate>
                                         </DataGridTemplateColumn>
-                                        <DataGridTextColumn Header="Value" Binding="{Binding Value}" Width="3*" CanUserSort="False" />
+                                        <DataGridTextColumn Header="Value" 
+                                                            Binding="{Binding Value}" 
+                                                            Width="3*" 
+                                                            CanUserSort="False" />
                                     </DataGrid.Columns>
                                 </DataGrid>
                             </DockPanel>
                         </TabItem>
                         <TabItem Header="Authentication">
                             <StackPanel Margin="8">
-                                <TextBlock Text="Authentication" FontWeight="Bold" Margin="0,0,0,8" />
-                                <TextBlock Text="Select scheme:" />
-                                <WrapPanel Margin="4">
-                                    <RadioButton Content="None" GroupName="AuthScheme" Margin="4"
+                                <TextBlock Text="Authentication" 
+                                           FontWeight="Bold" 
+                                           Margin="0,0,0,8" />
+                                <TextBlock Text="Select scheme:" 
+                                           Margin="0,0,0,4" />
+                                
+                                <!-- Authentication Scheme Selection -->
+                                <WrapPanel Margin="0,0,0,8">
+                                    <RadioButton Content="None" 
+                                                 GroupName="AuthScheme" 
+                                                 Margin="0,0,16,0"
                                                  IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=None}" />
-                                    <RadioButton Content="Basic" GroupName="AuthScheme" Margin="4"
+                                    <RadioButton Content="Basic" 
+                                                 GroupName="AuthScheme" 
+                                                 Margin="0,0,16,0"
                                                  IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Basic}" />
-                                    <RadioButton Content="Bearer" GroupName="AuthScheme" Margin="4"
+                                    <RadioButton Content="Bearer" 
+                                                 GroupName="AuthScheme" 
+                                                 Margin="0,0,16,0"
                                                  IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Bearer}" />
-                                    <RadioButton Content="ApiKey" GroupName="AuthScheme" Margin="4"
+                                    <RadioButton Content="ApiKey" 
+                                                 GroupName="AuthScheme"
                                                  IsChecked="{Binding AuthScheme, Mode=TwoWay, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=ApiKey}" />
                                 </WrapPanel>
 
-                                <StackPanel Margin="0,8,0,0">
-                                    <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Basic}">
-                                        <TextBlock Text="Basic Authentication" FontWeight="Bold" />
-                                        <TextBox Text="{Binding BasicUsername}" Watermark="Username" Margin="0,4" />
-                                        <TextBox Text="{Binding BasicPassword, Mode=TwoWay}" PasswordChar="*" Margin="0,4"  Watermark="Password"/>
-                                    </StackPanel>
-                                    <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Bearer}">
-                                        <TextBlock Text="Bearer Token" FontWeight="Bold" />
-                                        <TextBox Text="{Binding BearerToken}" Watermark="Token" Margin="0,4" />
-                                    </StackPanel>
-                                    <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=ApiKey}">
-                                        <TextBlock Text="API Key" FontWeight="Bold" />
-                                        <TextBox Text="{Binding ApiKey}" Watermark="Key" Margin="0,4" />
-                                        <TextBox Text="{Binding ApiKeyName}" Watermark="Header/Param name (e.g. X-API-KEY or api_key)" Margin="0,4" />
-                                        <ComboBox ItemsSource="{Binding ApiKeyLocations}" SelectedItem="{Binding ApiKeyLocation, Mode=TwoWay}" Margin="0,4" />
-                                    </StackPanel>
+                                <!-- Basic Authentication -->
+                                <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Basic}">
+                                    <TextBlock Text="Basic Authentication" 
+                                               FontWeight="Bold" 
+                                               Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding BasicUsername}" 
+                                             Watermark="Username" 
+                                             Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding BasicPassword, Mode=TwoWay}" 
+                                             PasswordChar="*" 
+                                             Watermark="Password"
+                                             Margin="0,0,0,4" />
+                                </StackPanel>
+                                
+                                <!-- Bearer Token -->
+                                <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=Bearer}">
+                                    <TextBlock Text="Bearer Token" 
+                                               FontWeight="Bold" 
+                                               Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding BearerToken}" 
+                                             Watermark="Token" 
+                                             Margin="0,0,0,4" />
+                                </StackPanel>
+                                
+                                <!-- API Key -->
+                                <StackPanel IsVisible="{Binding AuthScheme, Converter={StaticResource EqualityToBooleanConverter}, ConverterParameter=ApiKey}">
+                                    <TextBlock Text="API Key" 
+                                               FontWeight="Bold" 
+                                               Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding ApiKey}" 
+                                             Watermark="Key" 
+                                             Margin="0,0,0,4" />
+                                    <TextBox Text="{Binding ApiKeyName}" 
+                                             Watermark="Header/Param name (e.g. X-API-KEY or api_key)" 
+                                             Margin="0,0,0,4" />
+                                    <ComboBox ItemsSource="{Binding ApiKeyLocations}" 
+                                              SelectedItem="{Binding ApiKeyLocation, Mode=TwoWay}" 
+                                              Margin="0,0,0,4" />
                                 </StackPanel>
                             </StackPanel>
                         </TabItem>
@@ -214,33 +298,55 @@
 
             </TabItem>
             <TabItem Header="gRPC">
-                <!-- gRPC tab content -->
+                <TextBlock Text="gRPC functionality coming soon..." 
+                           Margin="8" 
+                           VerticalAlignment="Center" 
+                           HorizontalAlignment="Center" />
             </TabItem>
         </TabControl>
-        <DataGrid Grid.Row="2" Grid.Column="1" ItemsSource="{Binding HttpRequestResults}" IsReadOnly="True"
-            CanUserResizeColumns="True">
+        
+        <!-- Results Grid -->
+        <DataGrid Grid.Row="1" 
+                  Grid.Column="1" 
+                  ItemsSource="{Binding HttpRequestResults}" 
+                  IsReadOnly="True"
+                  CanUserResizeColumns="True">
             <DataGrid.Columns>
-                <DataGridTemplateColumn Width="18">
-                    <DataTemplate>
-                        <Button
-                            Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).ShowDetailsCommand}"
-                            CommandParameter="{Binding .}" Background="Transparent">
-                            <PathIcon Height="16" Width="16" Data="{StaticResource lookup}"></PathIcon>
-                        </Button>
-                    </DataTemplate>
-                </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Request Number" Binding="{Binding RequestNumber}" />
-                <DataGridTextColumn Header="Response Code" Binding="{Binding ResponseCode}" />
-                <DataGridTemplateColumn Header="Response Content">
+                <DataGridTemplateColumn Width="40">
+                    <DataGridTemplateColumn.Header>
+                        <TextBlock Text="" />
+                    </DataGridTemplateColumn.Header>
                     <DataGridTemplateColumn.CellTemplate>
                         <DataTemplate>
-
-                            <TextBlock
-                                Text="{Binding ResponseContent, Converter={StaticResource TruncateTextConverter}, ConverterParameter=30}" />
+                            <Button Command="{Binding #Root.((vm:MainWindowViewModel)DataContext).ShowDetailsCommand}"
+                                    CommandParameter="{Binding .}" 
+                                    Background="Transparent"
+                                    ToolTip.Tip="View details">
+                                <PathIcon Height="16" 
+                                          Width="16" 
+                                          Data="{StaticResource Lookup}" />
+                            </Button>
                         </DataTemplate>
                     </DataGridTemplateColumn.CellTemplate>
                 </DataGridTemplateColumn>
-                <DataGridTextColumn Header="Request Duration" Binding="{Binding RequestDuration}" />
+                <DataGridTextColumn Header="Request #" 
+                                    Binding="{Binding RequestNumber}" 
+                                    Width="Auto" />
+                <DataGridTextColumn Header="Status Code" 
+                                    Binding="{Binding ResponseCode}" 
+                                    Width="Auto" />
+                <DataGridTemplateColumn Header="Response Content" 
+                                        Width="*">
+                    <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding ResponseContent, Converter={StaticResource TruncateTextConverter}, ConverterParameter=30}" 
+                                       TextTrimming="CharacterEllipsis" />
+                        </DataTemplate>
+                    </DataGridTemplateColumn.CellTemplate>
+                </DataGridTemplateColumn>
+                <DataGridTextColumn Header="Duration" 
+                                    Binding="{Binding RequestDuration}" 
+                                    Width="Auto" />
             </DataGrid.Columns>
         </DataGrid>
     </Grid>
