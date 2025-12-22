@@ -78,7 +78,8 @@ namespace ApiTester.Builders
                     {
                         var uriBuilder = new UriBuilder(request.RequestUri!);
                         var q = System.Web.HttpUtility.ParseQueryString(uriBuilder.Query);
-                        q["api_key"] = apiKey;
+                        var paramName = string.IsNullOrWhiteSpace(apiKeyName) ? "api_key" : apiKeyName;
+                        q[paramName] = apiKey;
                         uriBuilder.Query = q.ToString();
                         request.RequestUri = uriBuilder.Uri;
                     }
