@@ -7,7 +7,7 @@
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
     x:Class="ApiTester.Views.MainWindow"
     x:DataType="vm:MainWindowViewModel"
-    Icon="/Assets/avalonia-logo.ico"
+    Icon="/Assets/ApiTester.ico"
     Title="ApiTester"
     SystemDecorations="None"
     ExtendClientAreaToDecorationsHint="True"
@@ -51,7 +51,7 @@
     <Border Grid.Row="0" Grid.ColumnSpan="2" Background="#FFEEEEEE" Padding="4" PointerPressed="TitleBar_PointerPressed">
             <Grid ColumnDefinitions="Auto,*,Auto" VerticalAlignment="Center">
                 <!-- App icon -->
-                <Image Source="/Assets/avalonia-logo.ico" Width="20" Height="20" Margin="4" />
+                <Image Source="/Assets/ApiTester.ico" Width="20" Height="20" Margin="4" />
 
                 <!-- Menu sits between icon and window buttons -->
                 <Menu Grid.Column="1" HorizontalAlignment="Left">

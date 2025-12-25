@@ -8,7 +8,7 @@
     Title="HTTP Request Result"
     mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
     WindowStartupLocation="CenterOwner"
-    Icon="/Assets/avalonia-logo.ico"
+    Icon="/Assets/ApiTester.ico"
 >
     <TabControl Grid.Column="0">
         <TabItem Header="Body">
