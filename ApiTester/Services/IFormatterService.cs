@@ -12,10 +12,26 @@ public interface IFormatterService
     string FormatJson(string input);
 
     /// <summary>
+    /// Formats an XML string with indentation.
+    /// </summary>
+    /// <param name="input">The XML string to format.</param>
+    /// <returns>The formatted XML string, or an empty string if the input is null or whitespace.</returns>
+    /// <exception cref="System.Xml.XmlException">Thrown when the input is not a valid XML string.</exception>
+    string FormatXml(string input);
+
+    /// <summary>
     /// Attempts to format a JSON string with indentation.
     /// </summary>
     /// <param name="input">The JSON string to format.</param>
     /// <param name="output">The formatted JSON string, or the original input if formatting fails.</param>
     /// <returns>True if the input was successfully formatted; otherwise, false.</returns>
     bool TryFormatJson(string input, out string output);
+
+    /// <summary>
+    /// Attempts to format an XML string with indentation.
+    /// </summary>
+    /// <param name="input">The XML string to format.</param>
+    /// <param name="output">The formatted XML string, or the original input if formatting fails.</param>
+    /// <returns>True if the input was successfully formatted; otherwise, false.</returns>
+    bool TryFormatXml(string input, out string output);
 }

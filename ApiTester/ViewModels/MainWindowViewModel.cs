@@ -10,6 +10,7 @@
     using System.Threading.Tasks;
     using ApiTester.Builders;
     using ApiTester.Models;
+    using ApiTester.Extensions;
     using Newtonsoft.Json;
     using ReactiveUI;
     using ApiTester.Services;
@@ -678,12 +679,20 @@
 
             try
             {
-                RequestBody = _formatterService.FormatJson(RequestBody);
+                RequestBody = ContentTypeHelper.IsJson(ContentType)
+                    ? _formatterService.FormatJson(RequestBody)
+                    : ContentTypeHelper.IsXml(ContentType)
+                        ? _formatterService.FormatXml(RequestBody)
+                        : RequestBody;
                 return true;
             }
             catch (JsonReaderException ex)
             {
                 ValidationStatus = $"Request body is not valid JSON: {ex.Message}";
+            }
+            catch (System.Xml.XmlException ex)
+            {
+                ValidationStatus = $"Request body is not valid XML: {ex.Message}";
             }
             catch (Exception ex)
             {

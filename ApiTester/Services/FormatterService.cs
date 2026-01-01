@@ -1,3 +1,4 @@
+using System.Xml.Linq;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
@@ -16,6 +17,17 @@ public class FormatterService : IFormatterService
         return json;
     }
 
+    public string FormatXml(string input)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return string.Empty;
+        }
+
+        var document = XDocument.Parse(input);
+        return document.ToString(SaveOptions.None);
+    }
+
     /// <inheritdoc />
     public bool TryFormatJson(string input, out string output)
     {
@@ -31,6 +43,26 @@ public class FormatterService : IFormatterService
             return true;
         }
         catch (JsonReaderException)
+        {
+            output = input;
+            return false;
+        }
+    }
+
+    public bool TryFormatXml(string input, out string output)
+    {
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            output = string.Empty;
+            return false;
+        }
+
+        try
+        {
+            output = FormatXml(input);
+            return true;
+        }
+        catch (System.Xml.XmlException)
         {
             output = input;
             return false;

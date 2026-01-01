@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using ApiTester.Extensions;
 using ApiTester.Models;
+using ApiTester.Services;
 
 namespace ApiTester.ViewModels
 {
@@ -25,9 +27,22 @@ namespace ApiTester.ViewModels
             }
 
             var body = await HttpRequestResult.HttpResponseMessage.Content.ReadAsStringAsync();
-            _formatterService.TryFormatJson(body, out var formattedBody);
+            var contentType = HttpRequestResult.HttpResponseMessage.Content.Headers.ContentType?.MediaType;
 
-            _responseBody = formattedBody;
+            if (ContentTypeHelper.IsJson(contentType))
+            {
+                _formatterService.TryFormatJson(body, out var formattedBody);
+                _responseBody = formattedBody;
+            }
+            else if (ContentTypeHelper.IsXml(contentType))
+            {
+                _formatterService.TryFormatXml(body, out var formattedBody);
+                _responseBody = formattedBody;
+            }
+            else
+            {
+                _responseBody = body;
+            }
         }
 
 
